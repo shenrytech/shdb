@@ -1,0 +1,18 @@
+{
+    "protoc": {
+        "compile_on_save": false,
+        "options": [
+            "--proto_path=${HOME}/.local/include",
+            "--proto_path=${workspaceRoot}",
+            "--go_opt=module=github.com/shenrytech/shdb",
+            "--go_out=${workspaceRoot}",
+            "--go-grpc_out=${workspaceRoot}",
+            "--go-grpc_opt=module=github.com/shenrytech/shdb",
+        ]
+    },
+    "triggerTaskOnSave.tasks": {
+        "Compile protobuf": [
+            "*.proto",
+        ],
+    },
+}

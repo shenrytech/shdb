@@ -1,0 +1,32 @@
+syntax = "proto3";
+option go_package = "github.com/shenrytech/shdb";
+
+import "google/protobuf/timestamp.proto";
+
+/*
+
+  Key:
+    Type 32bit
+    UUID 16*8bit
+    Labels
+    Description
+    Timestamps
+    MessagePayload
+*/
+
+package shdb;  
+ 
+message Metadata {
+  bytes type = 1;
+  bytes uuid = 2;
+  repeated string labels = 3;
+  string description = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+
+message TObject {
+  shdb.Metadata metadata = 1;
+  string my_field = 2;
+}
