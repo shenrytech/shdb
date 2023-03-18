@@ -7,20 +7,20 @@ import (
 	"github.com/google/uuid"
 )
 
-type DbKey struct {
+type TypeId struct {
 	data [20]byte
 }
 
-func (k *DbKey) Equal(other *DbKey) bool {
+func (k *TypeId) Equal(other *TypeId) bool {
 	return bytes.Equal(k.data[:], other.data[:])
 }
 
-func (k *DbKey) String() string {
+func (k *TypeId) String() string {
 	return url.QueryEscape(string(k.data[:]))
 }
 
-func DbKeyFromString(str string) (*DbKey, error) {
-	k := &DbKey{}
+func TypeIdFromString(str string) (*TypeId, error) {
+	k := &TypeId{}
 	unescaped, err := url.QueryUnescape(str)
 	if err != nil {
 		return nil, err
@@ -29,31 +29,31 @@ func DbKeyFromString(str string) (*DbKey, error) {
 	return k, nil
 }
 
-func (k *DbKey) Key() []byte {
+func (k *TypeId) Key() []byte {
 	return k.data[:]
 }
 
-func NewDbKey(typeKey TypeKey, id []byte) *DbKey {
-	ret := &DbKey{}
+func NewTypeId(typeKey TypeKey, id []byte) *TypeId {
+	ret := &TypeId{}
 	ret.SetType(typeKey)
 	ret.SetUuidBytes(id)
 	return ret
 }
 
-func MarshalDbKey(key []byte) *DbKey {
-	ret := &DbKey{}
+func MarshalTypeId(key []byte) *TypeId {
+	ret := &TypeId{}
 	copy(ret.data[:], key)
 	return ret
 }
 
-func GetDbKey(obj IObject) *DbKey {
-	ret := &DbKey{}
+func GetTypeId(obj IObject) *TypeId {
+	ret := &TypeId{}
 	ret.SetType([4]byte(obj.GetMetadata().Type))
 	ret.SetUuidBytes(obj.GetMetadata().Uuid)
 	return ret
 }
 
-func (k *DbKey) Uuid() uuid.UUID {
+func (k *TypeId) Uuid() uuid.UUID {
 	id, err := uuid.FromBytes(k.data[4:])
 	if err != nil {
 		panic(err)
@@ -61,19 +61,19 @@ func (k *DbKey) Uuid() uuid.UUID {
 	return id
 }
 
-func (k *DbKey) UuidBytes() []byte {
+func (k *TypeId) UuidBytes() []byte {
 	return k.data[4:]
 }
 
-func (k *DbKey) TypeKey() TypeKey {
+func (k *TypeId) TypeKey() TypeKey {
 	return [4]byte(k.data[:4])
 }
 
-func (k *DbKey) SetUuidBytes(id []byte) {
+func (k *TypeId) SetUuidBytes(id []byte) {
 	copy(k.data[4:], id[:])
 }
 
-func (k *DbKey) SetUuid(id uuid.UUID) {
+func (k *TypeId) SetUuid(id uuid.UUID) {
 	v, err := id.MarshalBinary()
 	if err != nil {
 		panic(err)
@@ -81,6 +81,6 @@ func (k *DbKey) SetUuid(id uuid.UUID) {
 	copy(k.data[4:], v[:])
 }
 
-func (k *DbKey) SetType(keyType TypeKey) {
+func (k *TypeId) SetType(keyType TypeKey) {
 	copy(k.data[:4], keyType[:])
 }

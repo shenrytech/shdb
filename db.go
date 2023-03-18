@@ -3,6 +3,7 @@ package shdb
 import (
 	"bytes"
 	"net/url"
+	"sort"
 
 	"go.etcd.io/bbolt"
 	"go.uber.org/zap"
@@ -16,8 +17,8 @@ var (
 )
 
 func Init(logger *zap.Logger, dbFile string) {
-
-	db, err := bbolt.Open(dbFile, 0600, nil)
+	var err error
+	db, err = bbolt.Open(dbFile, 0600, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -59,9 +60,9 @@ func Put[T IObject](val ...T) error {
 	})
 }
 
-func Get[T IObject](typeKey TypeKey, id []byte) (T, error) {
+func Get[T IObject](tid TypeId) (T, error) {
 	var t T
-	kv := KeyVal{DbKey: *NewDbKey(typeKey, id)}
+	kv := KeyVal{TypeId: tid}
 	err := db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(BUCKET_OBJ)
 		kv.Value = b.Get(kv.Key())
@@ -75,28 +76,38 @@ func Get[T IObject](typeKey TypeKey, id []byte) (T, error) {
 	return t, err
 }
 
-func Delete[T IObject](typeKey TypeKey, id []byte) (T, error) {
-	val, err := Get[T](typeKey, id)
+func Update[T IObject](func(obj T) (T, error)) (t T, err error) {
+	return
+}
+
+func Delete[T IObject](tid TypeId) (T, error) {
+	val, err := Get[T](tid)
 	if err != nil {
 		return val, err
 	}
-	dbk := NewDbKey(typeKey, id)
 	return val, db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(BUCKET_OBJ)
-		return b.Delete(dbk.Key())
+		return b.Delete(tid.Key())
 	})
 
 }
 func GetAllKV(typeKey TypeKey) ([]KeyVal, error) {
 	allKvs := []KeyVal{}
-	return allKvs, db.View(func(tx *bbolt.Tx) error {
+	err := db.View(func(tx *bbolt.Tx) error {
 		c := tx.Bucket(BUCKET_OBJ).Cursor()
 		for k, v := c.Seek(typeKey[:]); k != nil && bytes.HasPrefix(k, typeKey[:]); k, v = c.Next() {
-			kv := KeyVal{DbKey: *MarshalDbKey(k), Value: v}
+			kv := KeyVal{TypeId: *MarshalTypeId(k), Value: v}
 			allKvs = append(allKvs, kv)
 		}
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
+	// sort.SliceStable(allKvs, func(i, j int) bool {
+	// 	return bytes.Compare(allKvs[i].Key(), allKvs[j].Key()) < 0
+	// })
+	return allKvs, nil
 }
 
 func GetAll[T IObject](typeKey TypeKey) ([]T, error) {
@@ -108,21 +119,24 @@ func GetAll[T IObject](typeKey TypeKey) ([]T, error) {
 }
 
 func List[T IObject](typeKey TypeKey, pageSize int32, pageToken string) (res []T, nextPageToken string, err error) {
-	last := &DbKey{}
+	last := &TypeId{}
 	firstIdx := 0
-	lastIdx := 0
+	lastIdx := int(pageSize)
 	if pageToken != "" {
 		ptVal, err := url.ParseQuery(pageToken)
 		if err != nil {
 			return nil, "", err
 		}
-		last, err = DbKeyFromString(ptVal.Get("last"))
+		last, err = TypeIdFromString(ptVal.Get("last"))
 		if err != nil {
 			return nil, "", err
 		}
 	}
 
 	allKvs, err := GetAllKV(typeKey)
+	sort.SliceStable(allKvs, func(i, j int) bool {
+		return bytes.Compare(allKvs[i].Key(), allKvs[j].Key()) < 0
+	})
 	if err != nil {
 		return nil, "", err
 	}
@@ -135,15 +149,19 @@ func List[T IObject](typeKey TypeKey, pageSize int32, pageToken string) (res []T
 				break findLastLoop
 			}
 		}
-		return nil, "", nil // All items returned
+		if lastIdx > len(allKvs) {
+			return nil, "", nil // All items returned
+		}
 	}
 	if lastIdx > len(allKvs) {
 		lastIdx = len(allKvs)
 	}
 	ret := allKvs[firstIdx:lastIdx]
-	ptVal := url.Values{}
-	ptVal.Set("last", ret[len(ret)-1].String())
-	nextPageToken = ptVal.Encode()
+	if lastIdx < len(allKvs) {
+		ptVal := url.Values{}
+		ptVal.Set("last", ret[len(ret)-1].String())
+		nextPageToken = ptVal.Encode()
+	}
 	ts, err := UnmarshalMany[T](ret)
 	return ts, nextPageToken, err
 }

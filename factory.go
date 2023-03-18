@@ -13,27 +13,8 @@ type IObject interface {
 }
 
 type KeyVal struct {
-	DbKey
+	TypeId
 	Value []byte
-}
-
-func Key(typeKey TypeKey, id uuid.UUID) []byte {
-	res := []byte{}
-	res = append(res, typeKey[:]...)
-	v, err := id.MarshalBinary()
-	if err != nil {
-		panic(err)
-	}
-	return append(res, v...)
-}
-
-func TypeId(key []byte) (TypeKey, uuid.UUID) {
-	tk := TypeKey(key[:4])
-	id, err := uuid.FromBytes(key[4:])
-	if err != nil {
-		panic(err)
-	}
-	return tk, id
 }
 
 type TypeKey = [4]byte
