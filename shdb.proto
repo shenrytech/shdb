@@ -21,20 +21,28 @@ import "google/protobuf/timestamp.proto";
     MessagePayload
 */
 
-package shdb;  
- 
+package shdb;
+
 message Metadata {
   bytes type = 1;
   bytes uuid = 2;
   repeated string labels = 3;
   string description = 4;
-  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp created_at = 5; 
   google.protobuf.Timestamp updated_at = 6;
 }
 
+message SearchHit {
+  Metadata metadata = 1;
+  repeated string hits = 2;
+}
 
-message TObject {
+message SearchResult {
+  repeated SearchHit hits = 1;
+}
+
+message TObject { 
   shdb.Metadata metadata = 1;
   string my_field = 2;
-  uint64 my_int = 3;
+  uint64 my_int = 3; 
 }

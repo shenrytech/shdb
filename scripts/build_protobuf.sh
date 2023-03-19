@@ -26,9 +26,4 @@ function build_pb() {
     printf " "
 }
 
-# Generate bindings
-for proto_file in $(ls $projRoot); do
-    printf "Generating bindings for \'$proto_file\' ["
-    build_pb ${projRoot}/$proto_file
-    printf "]\n"
-done
+build_pb ${projRoot}/shdb.proto

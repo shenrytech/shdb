@@ -53,7 +53,7 @@ func GetTypeId(obj IObject) *TypeId {
 	return ret
 }
 
-func (k *TypeId) Uuid() uuid.UUID {
+func (k TypeId) Uuid() uuid.UUID {
 	id, err := uuid.FromBytes(k.data[4:])
 	if err != nil {
 		panic(err)
@@ -61,11 +61,11 @@ func (k *TypeId) Uuid() uuid.UUID {
 	return id
 }
 
-func (k *TypeId) UuidBytes() []byte {
+func (k TypeId) UuidBytes() []byte {
 	return k.data[4:]
 }
 
-func (k *TypeId) TypeKey() TypeKey {
+func (k TypeId) TypeKey() TypeKey {
 	return [4]byte(k.data[:4])
 }
 

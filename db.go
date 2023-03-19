@@ -2,11 +2,14 @@ package shdb
 
 import (
 	"bytes"
-	"net/url"
-	"sort"
+	"context"
+	"errors"
+	"io"
 
+	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -76,8 +79,23 @@ func Get[T IObject](tid TypeId) (T, error) {
 	return t, err
 }
 
-func Update[T IObject](func(obj T) (T, error)) (t T, err error) {
-	return
+func Update[T IObject](tid TypeId, fn func(obj T) (T, error)) (t T, err error) {
+	err = db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(BUCKET_OBJ)
+		kv := KeyVal{TypeId: tid}
+		kv.Value = b.Get(kv.Key())
+		if kv.Value == nil {
+			return ErrNotFound
+		}
+		wo, err := Unmarshal[T](kv)
+		if err != nil {
+			return err
+		}
+		t, err = fn(wo)
+		t.GetMetadata().UpdatedAt = timestamppb.Now()
+		return err
+	})
+	return t, err
 }
 
 func Delete[T IObject](tid TypeId) (T, error) {
@@ -118,50 +136,110 @@ func GetAll[T IObject](typeKey TypeKey) ([]T, error) {
 	return UnmarshalMany[T](allKvs)
 }
 
-func List[T IObject](typeKey TypeKey, pageSize int32, pageToken string) (res []T, nextPageToken string, err error) {
-	last := &TypeId{}
-	firstIdx := 0
-	lastIdx := int(pageSize)
-	if pageToken != "" {
-		ptVal, err := url.ParseQuery(pageToken)
+func queryStream(typ TypeKey, doneCh chan struct{}) (ch chan proto.Message) {
+	ch = make(chan proto.Message, 10)
+	go func() {
+		defer close(ch)
+		err := db.View(func(tx *bbolt.Tx) error {
+			cnt := 1
+			c := tx.Bucket(BUCKET_OBJ).Cursor()
+			for k, v := c.Seek(typ[:]); k != nil && bytes.HasPrefix(k, typ[:]); k, v = c.Next() {
+				kv := KeyVal{TypeId: *MarshalTypeId(k), Value: v}
+				if kv.Value == nil {
+					log.Warn("empty value in database", zap.String("kv", kv.String()))
+				}
+				t, err := unmarshal(kv)
+				if err != nil {
+					log.Error("failed to parse value in database", zap.String("kv", kv.String()), zap.Error(err))
+				} else {
+					select {
+					case ch <- t:
+						log.Debug("sending msg", zap.Int("count", cnt))
+						cnt++
+					case <-doneCh:
+						log.Debug("doneCh")
+						return io.EOF
+					}
+				}
+			}
+			return nil
+		})
 		if err != nil {
-			return nil, "", err
+			log.Error("QueryStream failed", zap.Error(err))
 		}
-		last, err = TypeIdFromString(ptVal.Get("last"))
+	}()
+	return
+}
+
+type activeStream struct {
+	inCh   chan proto.Message
+	doneCh chan struct{}
+}
+
+var activeStreams = map[uuid.UUID]*activeStream{}
+
+func Query[T IObject](ctx context.Context, typ TypeKey, selectFn func(obj T) (bool, error), pageSize int32, pageToken string) (result []T, nextPageToken string, err error) {
+
+	var (
+		streamId uuid.UUID
+		stream   *activeStream
+		ok       bool
+	)
+
+	// Find out the active stream, or create a new
+	if pageToken == "" {
+		streamId, err = uuid.NewUUID()
 		if err != nil {
-			return nil, "", err
+			return
+		}
+		doneCh := make(chan struct{})
+		inCh := queryStream(typ, doneCh)
+		stream = &activeStream{inCh: inCh, doneCh: doneCh}
+		activeStreams[streamId] = stream
+	} else {
+		streamId, err = uuid.Parse(pageToken)
+		if err != nil {
+			return
+		}
+		stream, ok = activeStreams[streamId]
+		if !ok {
+			return nil, "", ErrSessionInvalid
 		}
 	}
 
-	allKvs, err := GetAllKV(typeKey)
-	sort.SliceStable(allKvs, func(i, j int) bool {
-		return bytes.Compare(allKvs[i].Key(), allKvs[j].Key()) < 0
-	})
-	if err != nil {
-		return nil, "", err
-	}
-	if pageToken != "" {
-	findLastLoop:
-		for k, v := range allKvs {
-			if v.Equal(last) {
-				firstIdx = k + 1
-				lastIdx = k + 1 + int(pageSize)
-				break findLastLoop
+	// Collect results from the stream
+	res := []T{}
+	for i := 0; i < int(pageSize); i++ {
+		select {
+		case obj, ok := <-stream.inCh:
+			if !ok {
+				close(stream.doneCh)
+				delete(activeStreams, streamId)
+				return res, "", nil
 			}
+			t := obj.(T)
+			selected, err := selectFn(t)
+			if selected {
+				res = append(res, obj.(T))
+			}
+			if errors.Is(err, io.EOF) {
+				close(stream.doneCh)
+				delete(activeStreams, streamId)
+				return res, "", nil
+			}
+		case <-ctx.Done():
+			close(stream.doneCh)
+			delete(activeStreams, streamId)
+			return res, "", ErrContextCancelled
 		}
-		if lastIdx > len(allKvs) {
-			return nil, "", nil // All items returned
-		}
 	}
-	if lastIdx > len(allKvs) {
-		lastIdx = len(allKvs)
+
+	return res, streamId.String(), nil
+}
+
+func List[T IObject](ctx context.Context, typ TypeKey, pageSize int32, pageToken string) (result []T, nextPageToken string, err error) {
+	identityFn := func(a T) (bool, error) {
+		return true, nil
 	}
-	ret := allKvs[firstIdx:lastIdx]
-	if lastIdx < len(allKvs) {
-		ptVal := url.Values{}
-		ptVal.Set("last", ret[len(ret)-1].String())
-		nextPageToken = ptVal.Encode()
-	}
-	ts, err := UnmarshalMany[T](ret)
-	return ts, nextPageToken, err
+	return Query(ctx, typ, identityFn, pageSize, pageToken)
 }

@@ -65,6 +65,15 @@ func MustNew[T IObject](typeKey TypeKey) T {
 	return obj
 }
 
+func create(typeKey TypeKey) (proto.Message, error) {
+	tInfo, ok := typeRegistry[typeKey]
+	if !ok {
+		return nil, ErrNotAnObject
+	}
+	obj := proto.Clone(tInfo.tmplVal)
+	return obj, nil
+}
+
 func Create[T IObject](typeKey TypeKey) (T, error) {
 	tInfo, ok := typeRegistry[typeKey]
 	if !ok {
@@ -73,6 +82,18 @@ func Create[T IObject](typeKey TypeKey) (T, error) {
 	}
 	obj := proto.Clone(tInfo.tmplVal)
 	return obj.(T), nil
+}
+
+func unmarshal(kv KeyVal) (proto.Message, error) {
+	obj, err := create(kv.TypeKey())
+	if err != nil {
+		return nil, err
+	}
+	obj.ProtoReflect().Descriptor().FullName()
+	if err = proto.Unmarshal(kv.Value, obj); err != nil {
+		return nil, err
+	}
+	return obj, err
 }
 
 func Unmarshal[T IObject](kv KeyVal) (T, error) {

@@ -1,6 +1,7 @@
 package shdb
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path"
@@ -12,8 +13,52 @@ import (
 )
 
 var (
-	TObj = TypeKey{1, 2, 3, 4}
+	TObj       = TypeKey{1, 2, 3, 4}
+	dbFileName = path.Join(os.TempDir(), "db_test.db")
 )
+
+func GenerateTestData(count int) []*TObject {
+	l, _ := zap.NewDevelopment()
+	os.Remove(dbFileName)
+	Init(l, dbFileName)
+	Register(&TObject{
+		Metadata: &Metadata{Type: TObj[:]},
+		MyField:  "Staffan Olsson was here"})
+
+	list := []*TObject{}
+	for k := 0; k < count; k++ {
+		tObj := MustNew[*TObject](TObj)
+		tObj.MyInt = uint64(k)
+		list = append(list, tObj)
+	}
+	if err := Put(list...); err != nil {
+		panic(err)
+	}
+	return list
+}
+
+func RemoveTestData() {
+	Close()
+	os.Remove(dbFileName)
+}
+
+func CompareSame(a, b []*TObject) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	sort.SliceStable(a, func(i, j int) bool {
+		return a[i].MyInt < a[j].MyInt
+	})
+	sort.SliceStable(b, func(i, j int) bool {
+		return b[i].MyInt < b[j].MyInt
+	})
+	for k := range a {
+		if !proto.Equal(a[k], b[k]) {
+			return false
+		}
+	}
+	return true
+}
 
 func TestDB(t *testing.T) {
 	dbFile := path.Join(os.TempDir(), "db_test.db")
@@ -62,39 +107,19 @@ func TestDB(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	dbFile := path.Join(os.TempDir(), "db_test.db")
-	l, _ := zap.NewDevelopment()
-	Init(l, dbFile)
-	defer func() {
-		Close()
-		os.Remove(dbFile)
-	}()
-	Register(&TObject{Metadata: &Metadata{Type: TObj[:]}})
-
-	list := []*TObject{}
-	for k := 0; k < 2000; k++ {
-		tObj := MustNew[*TObject](TObj)
-		tObj.MyInt = uint64(k)
-		list = append(list, tObj)
-	}
-	if err := Put(list...); err != nil {
-		t.Fail()
-	}
-
-	list2, nextToken, err := List[*TObject](TObj, 400000, "")
+	list := GenerateTestData(1000)
+	defer RemoveTestData()
+	ctx := context.Background()
+	list2, nextToken, err := List[*TObject](ctx, TObj, 400000, "")
 	if err != nil {
 		t.Fail()
 	}
 	if nextToken != "" {
 		t.Fail()
 	}
-	sort.SliceStable(list2, func(i, j int) bool {
-		return list2[i].MyInt < list2[j].MyInt
-	})
-	for k := range list2 {
-		if !proto.Equal(list[k], list2[k]) {
-			t.Fail()
-		}
+
+	if !CompareSame(list, list2) {
+		t.Fail()
 	}
 
 	var (
@@ -103,7 +128,7 @@ func TestList(t *testing.T) {
 	)
 	list4 := []*TObject{}
 	for {
-		list3, nextPageToken, err = List[*TObject](TObj, 1000, nextPageToken)
+		list3, nextPageToken, err = List[*TObject](ctx, TObj, 1000, nextPageToken)
 		if err != nil {
 			t.Fail()
 		}
@@ -113,44 +138,25 @@ func TestList(t *testing.T) {
 		}
 	}
 
-	sort.SliceStable(list4, func(i, j int) bool {
-		return list4[i].MyInt < list4[j].MyInt
-	})
-	for k := range list4 {
-		if !proto.Equal(list[k], list4[k]) {
-			t.Fail()
-		}
+	if !CompareSame(list, list4) {
+		t.Fail()
 	}
 }
 
 func BenchmarkListLong(b *testing.B) {
-	dbFile := path.Join(os.TempDir(), "db_test.db")
-	l, _ := zap.NewDevelopment()
-	Init(l, dbFile)
-	defer func() {
-		Close()
-		os.Remove(dbFile)
-	}()
-	Register(&TObject{Metadata: &Metadata{Type: TObj[:]}})
 
-	list := []*TObject{}
-	for k := 0; k < 2000; k++ {
-		tObj := MustNew[*TObject](TObj)
-		tObj.MyInt = uint64(k)
-		list = append(list, tObj)
-	}
-	if err := Put(list...); err != nil {
-		b.Fail()
-	}
+	list := GenerateTestData(1000)
+	defer RemoveTestData()
 
 	var (
 		nextPageToken string = ""
 		list3         []*TObject
 		err           error
 	)
+	ctx := context.Background()
 	list4 := []*TObject{}
 	for {
-		list3, nextPageToken, err = List[*TObject](TObj, 400000, nextPageToken)
+		list3, nextPageToken, err = List[*TObject](ctx, TObj, 400000, nextPageToken)
 		if err != nil {
 			b.Fail()
 		}
@@ -160,12 +166,7 @@ func BenchmarkListLong(b *testing.B) {
 		}
 	}
 
-	sort.SliceStable(list4, func(i, j int) bool {
-		return list4[i].MyInt < list4[j].MyInt
-	})
-	for k := range list4 {
-		if !proto.Equal(list[k], list4[k]) {
-			b.Fail()
-		}
+	if !CompareSame(list, list4) {
+		b.Fail()
 	}
 }
