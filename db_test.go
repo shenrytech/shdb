@@ -21,19 +21,19 @@ import (
 	"sort"
 	"testing"
 
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
 
 var (
-	TObj       = TypeKey{1, 2, 3, 4}
-	dbFileName = path.Join(os.TempDir(), "db_test.db")
+	TObj = TypeKey{1, 2, 3, 4}
 )
 
-func GenerateTestData(count int) []*TObject {
-	l, _ := zap.NewDevelopment()
-	os.Remove(dbFileName)
-	Init(l, dbFileName)
+func GenerateTestData(count int) ([]*TObject, string) {
+	tmpDir, err := os.MkdirTemp("", "shdb_test")
+	if err != nil {
+		panic(err)
+	}
+	Init(path.Join(tmpDir, "test.db"))
 	Register(&TObject{
 		Metadata: &Metadata{Type: TObj[:]},
 		MyField:  "Staffan Olsson was here"})
@@ -47,12 +47,12 @@ func GenerateTestData(count int) []*TObject {
 	if err := Put(list...); err != nil {
 		panic(err)
 	}
-	return list
+	return list, tmpDir
 }
 
-func RemoveTestData() {
+func RemoveTestData(tmpDir string) {
 	Close()
-	os.Remove(dbFileName)
+	os.RemoveAll(tmpDir)
 }
 
 func CompareSame(a, b []*TObject) bool {
@@ -75,8 +75,7 @@ func CompareSame(a, b []*TObject) bool {
 
 func TestDB(t *testing.T) {
 	dbFile := path.Join(os.TempDir(), "db_test.db")
-	l, _ := zap.NewDevelopment()
-	Init(l, dbFile)
+	Init(dbFile)
 	defer func() {
 		Close()
 		os.Remove(dbFile)
@@ -120,8 +119,8 @@ func TestDB(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	list := GenerateTestData(1000)
-	defer RemoveTestData()
+	list, testDir := GenerateTestData(1000)
+	defer RemoveTestData(testDir)
 	ctx := context.Background()
 	list2, nextToken, err := List[*TObject](ctx, TObj, 400000, "")
 	if err != nil {
@@ -158,8 +157,8 @@ func TestList(t *testing.T) {
 
 func BenchmarkListLong(b *testing.B) {
 
-	list := GenerateTestData(1000)
-	defer RemoveTestData()
+	list, testDir := GenerateTestData(1000)
+	defer RemoveTestData(testDir)
 
 	var (
 		nextPageToken string = ""

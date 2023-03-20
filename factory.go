@@ -21,16 +21,26 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// IObject is the interface for all objects in the dataabase.
+// They all should stem from a protobuf message that looks like this:
+//
+//		message TObject {
+//	  		shdb.Metadata metadata = 1;
+//	  		string my_field = 2;
+//	  		uint64 my_int = 3;
+//		}
 type IObject interface {
 	proto.Message
 	GetMetadata() *Metadata
 }
 
+// KeyVal is the binary representation of an IObject as it is stored in the database
 type KeyVal struct {
 	TypeId
 	Value []byte
 }
 
+// TypeKey is the four bytes that identifies the type of an object
 type TypeKey = [4]byte
 
 type typeInfo struct {
@@ -42,6 +52,7 @@ type typeInfo struct {
 var typeRegistry = map[TypeKey]typeInfo{}
 var fnIndex = map[protoreflect.FullName]TypeKey{}
 
+// Register an IObject and it's type in the type table
 func Register[T IObject](tmpl T) {
 	typeKey := TypeKey(tmpl.GetMetadata().Type)
 	typeRegistry[typeKey] = typeInfo{
@@ -52,6 +63,8 @@ func Register[T IObject](tmpl T) {
 	fnIndex[tmpl.ProtoReflect().Descriptor().FullName()] = typeKey
 }
 
+// New creates a new IObject based on the type key and initializes
+// the Metadata fields.
 func New[T IObject](typeKey TypeKey) (obj T, err error) {
 	var id []byte
 	obj, err = Create[T](typeKey)
@@ -71,6 +84,7 @@ func New[T IObject](typeKey TypeKey) (obj T, err error) {
 	return obj, nil
 }
 
+// MustNew is like `New` but panics if there is an error
 func MustNew[T IObject](typeKey TypeKey) T {
 	obj, err := New[T](typeKey)
 	if err != nil {
@@ -88,6 +102,8 @@ func create(typeKey TypeKey) (proto.Message, error) {
 	return obj, nil
 }
 
+// Create just creates the memory for an IObject without
+// initializing the Metadata
 func Create[T IObject](typeKey TypeKey) (T, error) {
 	tInfo, ok := typeRegistry[typeKey]
 	if !ok {
@@ -110,6 +126,7 @@ func unmarshal(kv KeyVal) (proto.Message, error) {
 	return obj, err
 }
 
+// Unmarshal returns the IObject from a KeyVal binary representation
 func Unmarshal[T IObject](kv KeyVal) (T, error) {
 	obj, err := Create[T](kv.TypeKey())
 	if err != nil {
@@ -124,6 +141,7 @@ func Unmarshal[T IObject](kv KeyVal) (T, error) {
 	return obj, err
 }
 
+// UnmarshalMany unmarshals a list of KeyVal binary representations
 func UnmarshalMany[T IObject](kvs []KeyVal) ([]T, error) {
 	res := []T{}
 	for _, v := range kvs {
@@ -136,6 +154,8 @@ func UnmarshalMany[T IObject](kvs []KeyVal) ([]T, error) {
 	return res, nil
 }
 
+// Marshal returns a list of KeyVal binary representation representing
+// a list of IObjects
 func Marshal[T IObject](objs ...T) (ret []KeyVal, err error) {
 	if len(objs) == 0 {
 		return nil, nil

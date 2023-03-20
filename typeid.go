@@ -21,18 +21,26 @@ import (
 	"github.com/google/uuid"
 )
 
+// TypeId is the key in the key-value database that is used
+// to store IObjects. It has a memory layout like:
+//
+//	[b0 .. b3]		TypeKey
+//	[b4 .. b20]		Binary representation of an UUID
 type TypeId struct {
 	data [20]byte
 }
 
+// Equal compares two TypeIds and return true if they are equal
 func (k *TypeId) Equal(other *TypeId) bool {
 	return bytes.Equal(k.data[:], other.data[:])
 }
 
+// String returns the URL-encoded string of the TypeId
 func (k *TypeId) String() string {
 	return url.QueryEscape(string(k.data[:]))
 }
 
+// TypeIdFromString returns a TypeId from an URL-encoded string
 func TypeIdFromString(str string) (*TypeId, error) {
 	k := &TypeId{}
 	unescaped, err := url.QueryUnescape(str)
@@ -43,10 +51,12 @@ func TypeIdFromString(str string) (*TypeId, error) {
 	return k, nil
 }
 
+// Key returns the TypeId as a []byte slice
 func (k *TypeId) Key() []byte {
 	return k.data[:]
 }
 
+// NewTypeId creates a new TypeId based on TypeKey and UUID (Byte version)
 func NewTypeId(typeKey TypeKey, id []byte) *TypeId {
 	ret := &TypeId{}
 	ret.SetType(typeKey)
@@ -54,12 +64,14 @@ func NewTypeId(typeKey TypeKey, id []byte) *TypeId {
 	return ret
 }
 
+// MarshalTypeId creates a TypeId from a []byte slice
 func MarshalTypeId(key []byte) *TypeId {
 	ret := &TypeId{}
 	copy(ret.data[:], key)
 	return ret
 }
 
+// GetTypeId returns the TypeID from the Metadata of an IObject
 func GetTypeId(obj IObject) *TypeId {
 	ret := &TypeId{}
 	ret.SetType([4]byte(obj.GetMetadata().Type))
@@ -67,6 +79,7 @@ func GetTypeId(obj IObject) *TypeId {
 	return ret
 }
 
+// Uuid returns the uuid.UUID of the id of a TypeID
 func (k TypeId) Uuid() uuid.UUID {
 	id, err := uuid.FromBytes(k.data[4:])
 	if err != nil {
@@ -75,18 +88,22 @@ func (k TypeId) Uuid() uuid.UUID {
 	return id
 }
 
+// UuidBytes returns the byte version of the id of a TypeId
 func (k TypeId) UuidBytes() []byte {
 	return k.data[4:]
 }
 
+// TypeKey returns the TypeKey of a TypeId
 func (k TypeId) TypeKey() TypeKey {
 	return [4]byte(k.data[:4])
 }
 
+// SetUuidBytes sets the Id (as bytes) of a TypeId
 func (k *TypeId) SetUuidBytes(id []byte) {
 	copy(k.data[4:], id[:])
 }
 
+// SetUuid sets thte id (as uuid.UUID) of a TypeId
 func (k *TypeId) SetUuid(id uuid.UUID) {
 	v, err := id.MarshalBinary()
 	if err != nil {
@@ -95,6 +112,7 @@ func (k *TypeId) SetUuid(id uuid.UUID) {
 	copy(k.data[4:], v[:])
 }
 
+// SetType sets the type of a TypeId
 func (k *TypeId) SetType(keyType TypeKey) {
 	copy(k.data[:4], keyType[:])
 }

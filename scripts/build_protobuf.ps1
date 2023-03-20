@@ -4,9 +4,6 @@ Param(
 
 $go_module = 'github.com/shenrytech/shdb'
 
-[System.IO.Directory]::CreateDirectory($ts_out) | Out-Null
-[System.IO.Directory]::CreateDirectory($python_out) | Out-Null
-
 $protoc_inc_path = (get-item (Get-Command protoc).Path).Directory.Parent.FullName
 
 $google_path = Join-Path $protoc_inc_path include -Resolve
@@ -29,9 +26,5 @@ function Convert-Protobuf([string] $file) {
     build_pb_go $file
     Write-Host -ForegroundColor Cyan "]"
 }
-
-Get-ChildItem $projRoot -Filter *.proto |
-Foreach-Object {
-    Convert-Protobuf $_
-}
+Convert-Protobuf $projRoot/shdb.proto
  

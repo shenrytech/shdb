@@ -19,11 +19,11 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/shenrytech/shdb/jsonsearch"
 	"go.etcd.io/bbolt"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -51,25 +51,22 @@ func SearchProto(m proto.Message, query func(s string) bool) (hits []string, err
 func searchStream(typ TypeKey, selector func(s string) bool, doneCh chan struct{}) (ch chan *SearchHit) {
 	ch = make(chan *SearchHit, 10)
 	go func() {
-		log.Debug("starting searchStream")
-
 		defer func() {
 			close(ch)
-			log.Debug("terminating searchStrem")
 		}()
 
 		err := db.View(func(tx *bbolt.Tx) error {
 			cnt := 1
-			c := tx.Bucket(BUCKET_OBJ).Cursor()
+			c := tx.Bucket(bucket_obj).Cursor()
 			for k, v := c.Seek(typ[:]); k != nil && bytes.HasPrefix(k, typ[:]); k, v = c.Next() {
 				kv := KeyVal{TypeId: *MarshalTypeId(k), Value: v}
 				if kv.Value == nil {
-					log.Warn("empty value in database", zap.String("kv", kv.String()))
+					log.Printf("empty value in database kv=[%s]\n", kv.String())
 					continue
 				}
 				t, err := Unmarshal[IObject](kv)
 				if err != nil {
-					log.Error("failed to parse value in database", zap.String("kv", kv.String()), zap.Error(err))
+					log.Printf("failed to parse value in database kv=[%s], err=[%v]\n", kv.String(), err)
 				} else {
 					hits, err := SearchProto(t, selector)
 					if err == nil && len(hits) > 0 {
@@ -78,10 +75,8 @@ func searchStream(typ TypeKey, selector func(s string) bool, doneCh chan struct{
 							Hits:     hits,
 							Metadata: t.GetMetadata(),
 						}:
-							log.Debug("sending msg", zap.Int("count", cnt))
 							cnt++
 						case <-doneCh:
-							log.Debug("doneCh")
 							return io.EOF
 						}
 					}
@@ -90,7 +85,7 @@ func searchStream(typ TypeKey, selector func(s string) bool, doneCh chan struct{
 			return nil
 		})
 		if err != nil {
-			log.Error("searchStream failed", zap.Error(err))
+			log.Printf("searchStream failed, err=[%v]\n", err)
 		}
 	}()
 	return
@@ -103,6 +98,9 @@ type activeSearchStream struct {
 
 var activeSearchStreams = map[uuid.UUID]*activeSearchStream{}
 
+// Search searches the values of the fields of objects pertaining to a type by calling
+// a selector function for each field in all objects.
+// For paging functionality see `Query` method.
 func Search(ctx context.Context,
 	typ TypeKey,
 	selector func(string) bool,

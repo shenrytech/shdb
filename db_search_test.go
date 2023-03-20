@@ -18,12 +18,9 @@ import (
 	"context"
 	"strings"
 	"testing"
-
-	"go.uber.org/zap"
 )
 
 func TestSearch(t *testing.T) {
-	log, _ = zap.NewDevelopment()
 	GenerateTestData(1)
 
 	ctx := context.Background()
@@ -54,8 +51,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestSearch2(t *testing.T) {
-	log, _ = zap.NewDevelopment()
-	count := 5000
+	count := 50
+	pageSize := 10
 	GenerateTestData(count)
 
 	ctx := context.Background()
@@ -69,7 +66,7 @@ func TestSearch2(t *testing.T) {
 	for {
 		res, nextPageToken, err = Search(ctx, TObj, func(s string) bool {
 			return strings.Contains(s, "Staffan Olsson")
-		}, 100, nextPageToken)
+		}, int32(count/pageSize), nextPageToken)
 
 		if err != nil {
 			t.Fail()

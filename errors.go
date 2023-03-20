@@ -28,5 +28,4 @@ var (
 	ErrNotFound         = errors.New("not found")
 	ErrSessionInvalid   = errors.New("session invalid")
 	ErrContextCancelled = errors.New("context cancelled")
-	errJson             = errors.New("invalid json data")
 )

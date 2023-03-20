@@ -14,6 +14,7 @@
 
 package shdb
 
+// TypeId returns the TypeId representation of the type and Id
 func (m *Metadata) TypeId() TypeId {
 	res := TypeId{}
 	res.SetType([4]byte(m.Type))

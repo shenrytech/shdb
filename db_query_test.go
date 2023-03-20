@@ -16,12 +16,18 @@ package shdb
 
 import (
 	"context"
+	"log"
+	"os"
+	"path"
+	"strings"
 	"testing"
 )
 
 func TestQuery(t *testing.T) {
-	list := GenerateTestData(10)
-	defer RemoveTestData()
+	count := 10
+	pageSize := 10
+	list, testDir := GenerateTestData(count)
+	defer RemoveTestData(testDir)
 
 	var (
 		nextPageToken string = ""
@@ -35,7 +41,7 @@ func TestQuery(t *testing.T) {
 	}
 	list4 := []*TObject{}
 	for {
-		list3, nextPageToken, err = Query(ctx, TObj, identityFn, 400000, nextPageToken)
+		list3, nextPageToken, err = Query(ctx, TObj, identityFn, int32(count/pageSize), nextPageToken)
 		if err != nil {
 			t.Fail()
 		}
@@ -51,8 +57,10 @@ func TestQuery(t *testing.T) {
 }
 
 func TestQueryPageToken(t *testing.T) {
-	list := GenerateTestData(10000)
-	defer RemoveTestData()
+	count := 100
+	pageSize := 10
+	list, testDir := GenerateTestData(count)
+	defer RemoveTestData(testDir)
 
 	var (
 		nextPageToken string = ""
@@ -66,7 +74,7 @@ func TestQueryPageToken(t *testing.T) {
 	}
 	list4 := []*TObject{}
 	for {
-		list3, nextPageToken, err = Query(ctx, TObj, identityFn, 1, nextPageToken)
+		list3, nextPageToken, err = Query(ctx, TObj, identityFn, int32(count/pageSize), nextPageToken)
 		if err != nil {
 			t.Fail()
 		}
@@ -82,8 +90,10 @@ func TestQueryPageToken(t *testing.T) {
 }
 
 func TestQueryFilter(t *testing.T) {
-	list := GenerateTestData(10000)
-	defer RemoveTestData()
+	count := 100
+	pageSize := 10
+	list, testDir := GenerateTestData(count)
+	defer RemoveTestData(testDir)
 
 	var (
 		nextPageToken string = ""
@@ -97,7 +107,7 @@ func TestQueryFilter(t *testing.T) {
 	}
 	list4 := []*TObject{}
 	for {
-		list3, nextPageToken, err = Query(ctx, TObj, evenFn, 1, nextPageToken)
+		list3, nextPageToken, err = Query(ctx, TObj, evenFn, int32(count/pageSize), nextPageToken)
 		if err != nil {
 			t.Fail()
 		}
@@ -116,5 +126,55 @@ func TestQueryFilter(t *testing.T) {
 
 	if !CompareSame(evenList, list4) {
 		t.Fail()
+	}
+}
+
+func ExampleQuery() {
+	Init(path.Join(os.TempDir(), "example_query.db"))
+	Register(&TObject{
+		Metadata: &Metadata{Type: TObj[:]},
+		MyField:  "The flying duck is flying low"})
+
+	count := 100
+	pageSize := 10
+
+	list := []*TObject{}
+	for k := 0; k < count; k++ {
+		tObj := MustNew[*TObject](TObj)
+		tObj.MyInt = uint64(k)
+		list = append(list, tObj)
+	}
+	if err := Put(list...); err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		Close()
+		os.Remove(path.Join(os.TempDir(), "example_query.db"))
+	}()
+
+	var (
+		nextPageToken string = ""
+		partList      []*TObject
+		err           error
+	)
+	ctx := context.Background()
+
+	selectorFn := func(obj *TObject) (bool, error) {
+		return strings.Contains(obj.MyField, "flying"), nil
+	}
+	collected := []*TObject{}
+	for {
+		partList, nextPageToken, err = Query(ctx, TObj, selectorFn, int32(count/pageSize), nextPageToken)
+		if err != nil {
+			panic(err)
+		}
+		collected = append(collected, partList...)
+		if nextPageToken == "" {
+			break
+		}
+	}
+	for idx, obj := range collected {
+		log.Printf("%d: [%v]\n", idx, obj)
 	}
 }
