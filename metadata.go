@@ -14,10 +14,55 @@
 
 package shdb
 
+import (
+	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
 // TypeId returns the TypeId representation of the type and Id
 func (m *Metadata) TypeId() TypeId {
 	res := TypeId{}
-	res.SetType([4]byte(m.Type))
+	res.SetType(TypeKey(m.Type))
 	res.SetUuidBytes(m.Uuid)
 	return res
+}
+
+// Return the Metadata as an *ObjRef
+func (m *Metadata) Ref() *ObjRef {
+	return &ObjRef{
+		Type: m.Type,
+		Uuid: m.Uuid,
+	}
+}
+
+// Fill the metadata with fields that are missing
+func (m *Metadata) Fill() error {
+	if m.CreatedAt == nil {
+		m.CreatedAt = timestamppb.Now()
+	}
+	if m.Uuid == nil {
+		id, err := uuid.New().MarshalBinary()
+		if err != nil {
+			return err
+		}
+		m.Uuid = id
+	}
+	if m.Labels == nil {
+		m.Labels = make([]string, 0)
+	}
+	return nil
+}
+
+// GetUuidAsString returns the UUID as a string
+func (m *Metadata) GetUuidAsString() (string, error) {
+	us, err := m.GetUuidAsUUID()
+	if err != nil {
+		return "", err
+	}
+	return us.String(), nil
+}
+
+// GetUuidAsUUID returns the UUID as a uuid.UUID
+func (m *Metadata) GetUuidAsUUID() (uuid.UUID, error) {
+	return uuid.FromBytes(m.Uuid)
 }

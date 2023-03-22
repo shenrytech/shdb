@@ -40,6 +40,11 @@ message Metadata {
   google.protobuf.Timestamp updated_at = 6;
 }
 
+message ObjRef {
+  bytes type = 1;
+  bytes uuid = 2;
+}
+
 message SearchHit {
   Metadata metadata = 1;
   repeated string hits = 2;

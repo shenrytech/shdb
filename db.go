@@ -100,6 +100,23 @@ func Get[T IObject](tid TypeId) (T, error) {
 	return t, err
 }
 
+// GetRef returns an object from the database based on an ObjRef
+func GetRef[T IObject](ref *ObjRef) (T, error) {
+	var t T
+	kv := KeyVal{TypeId: *ref.TypeId()}
+	err := db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucket_obj)
+		kv.Value = b.Get(kv.Key())
+		if kv.Value == nil {
+			return ErrNotFound
+		}
+		var err error
+		t, err = Unmarshal[T](kv)
+		return err
+	})
+	return t, err
+}
+
 // GetOne returns one of the objects in the database with the specified type that
 // matches the selector function.
 // The selector should return true for a match and false otherwise when presented
