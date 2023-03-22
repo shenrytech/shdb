@@ -21,7 +21,7 @@ import (
 
 func TestGet(t *testing.T) {
 	var TObj = TypeKey{0, 0, 0, 1}
-	Register(&TObject{Metadata: &Metadata{Type: TObj[:]}})
+	Register("tobject", &TObject{Metadata: &Metadata{Type: TObj[:]}})
 	a := MustNew[*TObject](TObj)
 	data, _ := Marshal(a)
 

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 syntax = "proto3";
 option go_package = "github.com/shenrytech/shdb";
 
@@ -36,7 +35,7 @@ message Metadata {
   bytes uuid = 2;
   repeated string labels = 3;
   string description = 4;
-  google.protobuf.Timestamp created_at = 5; 
+  google.protobuf.Timestamp created_at = 5;
   google.protobuf.Timestamp updated_at = 6;
 }
 
@@ -50,12 +49,42 @@ message SearchHit {
   repeated string hits = 2;
 }
 
-message SearchResult {
-  repeated SearchHit hits = 1;
-}
+message SearchResult { repeated SearchHit hits = 1; }
 
-message TObject { 
+message TObject {
   shdb.Metadata metadata = 1;
   string my_field = 2;
-  uint64 my_int = 3; 
+  uint64 my_int = 3;
 }
+
+service ObjectService {
+  rpc List(ListReq) returns (ListRsp);
+  rpc Get(GetReq) returns (Object);
+  rpc Create(CreateReq) returns (Object);
+  rpc Update(UpdateReq) returns (Object);
+  rpc Delete(DeleteReq) returns (Object);
+}
+
+message Object {
+  bytes key = 1;
+  bytes value = 2;
+}
+
+message ListReq {
+  bytes type = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListRsp {
+  repeated Object objects = 1;
+  string next_page_token = 2;
+}
+
+message GetReq { ObjRef ref = 1; }
+
+message CreateReq { bytes type = 1; }
+
+message UpdateReq { Object object = 1; }
+
+message DeleteReq { ObjRef ref = 1; }

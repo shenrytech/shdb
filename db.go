@@ -83,6 +83,19 @@ func Put[T IObject](val ...T) error {
 	return nil
 }
 
+func get(tid TypeId) (*KeyVal, error) {
+	kv := &KeyVal{TypeId: tid}
+	err := db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucket_obj)
+		kv.Value = b.Get(kv.Key())
+		if kv.Value == nil {
+			return ErrNotFound
+		}
+		return nil
+	})
+	return kv, err
+}
+
 // Get an object from the database based on the type and id of the object.
 func Get[T IObject](tid TypeId) (T, error) {
 	var t T

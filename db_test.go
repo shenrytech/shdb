@@ -34,7 +34,7 @@ func GenerateTestData(count int) ([]*TObject, string) {
 		panic(err)
 	}
 	Init(path.Join(tmpDir, "test.db"))
-	Register(&TObject{
+	Register("tobject", &TObject{
 		Metadata: &Metadata{Type: TObj[:]},
 		MyField:  "Staffan Olsson was here"})
 
@@ -80,7 +80,7 @@ func TestDB(t *testing.T) {
 		Close()
 		os.Remove(dbFile)
 	}()
-	Register(&TObject{Metadata: &Metadata{Type: TObj[:]}})
+	Register("tobject", &TObject{Metadata: &Metadata{Type: TObj[:]}})
 	t1 := MustNew[*TObject](TObj)
 
 	if t1.GetMetadata().CreatedAt.Seconds == 0 {

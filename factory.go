@@ -44,21 +44,23 @@ type KeyVal struct {
 type TypeKey = [4]byte
 
 type typeInfo struct {
-	typeKey  TypeKey
-	tmplVal  proto.Message
-	fullName protoreflect.FullName
+	typeKey      TypeKey
+	tmplVal      proto.Message
+	fullName     protoreflect.FullName
+	friendlyName string
 }
 
 var typeRegistry = map[TypeKey]typeInfo{}
 var fnIndex = map[protoreflect.FullName]TypeKey{}
 
-// Register an IObject and it's type in the type table
-func Register[T IObject](tmpl T) {
+// Register an IObject and it's friendly name and type in the type table
+func Register[T IObject](name string, tmpl T) {
 	typeKey := TypeKey(tmpl.GetMetadata().Type)
 	typeRegistry[typeKey] = typeInfo{
-		typeKey:  typeKey,
-		tmplVal:  proto.Clone(tmpl),
-		fullName: tmpl.ProtoReflect().Descriptor().FullName(),
+		typeKey:      typeKey,
+		tmplVal:      proto.Clone(tmpl),
+		fullName:     tmpl.ProtoReflect().Descriptor().FullName(),
+		friendlyName: name,
 	}
 	fnIndex[tmpl.ProtoReflect().Descriptor().FullName()] = typeKey
 }
@@ -111,7 +113,13 @@ func Create[T IObject](typeKey TypeKey) (T, error) {
 		return t, ErrNotAnObject
 	}
 	obj := proto.Clone(tInfo.tmplVal)
-	return obj.(T), nil
+
+	b, ok := obj.(T)
+	if !ok {
+		var t T
+		return t, nil
+	}
+	return b, nil
 }
 
 func unmarshal(kv KeyVal) (proto.Message, error) {
