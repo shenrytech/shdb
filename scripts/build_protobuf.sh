@@ -23,7 +23,8 @@ function build_pb_go() {
 function build_pb() {
     local file=$1
     build_pb_go $1
-    printf " "
+    printf "\n"
 }
 
 build_pb ${projRoot}/shdb.proto
+build_pb ${projRoot}/test.proto

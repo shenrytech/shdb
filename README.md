@@ -18,7 +18,7 @@ func main() {
 	Init(path.Join(os.TempDir(), "example_query.db"))
 	Register(&TObject{
 		Metadata: &Metadata{Type: TObj[:]},
-		MyField:  "The flying duck is flying low"})
+		MyString:  "The flying duck is flying low"})
 
 	count := 100
 	pageSize := 10
@@ -46,7 +46,7 @@ func main() {
 	ctx := context.Background()
 
 	selectorFn := func(obj *TObject) (bool, error) {
-		return strings.Contains(obj.MyField, "flying"), nil
+		return strings.Contains(obj.MyString, "flying"), nil
 	}
 	collected := []*TObject{}
 	for {

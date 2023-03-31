@@ -16,6 +16,7 @@ syntax = "proto3";
 option go_package = "github.com/shenrytech/shdb";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/descriptor.proto";
 
 /*
 
@@ -51,12 +52,6 @@ message SearchHit {
 
 message SearchResult { repeated SearchHit hits = 1; }
 
-message TObject {
-  shdb.Metadata metadata = 1;
-  string my_field = 2;
-  uint64 my_int = 3;
-}
-
 service ObjectService {
   rpc List(ListReq) returns (ListRsp);
   rpc Get(GetReq) returns (Object);
@@ -88,3 +83,20 @@ message CreateReq { bytes type = 1; }
 message UpdateReq { Object object = 1; }
 
 message DeleteReq { ObjRef ref = 1; }
+
+message Shdb_Message_Options {
+  string type = 1;
+  repeated string aliases = 2;
+  bytes type_key = 3;
+  map<string,string> print_templates = 4;
+}
+
+extend google.protobuf.MessageOptions {
+  optional Shdb_Message_Options shdb_options = 52000;
+}
+
+extend google.protobuf.MessageOptions {
+  optional string shdb_type = 51234;
+  optional string shdb_aliases = 51235;
+  optional bytes shdb_type_key = 51236;
+}
