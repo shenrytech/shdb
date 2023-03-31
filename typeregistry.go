@@ -21,10 +21,12 @@ import (
 	"log"
 	"sync"
 
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -99,10 +101,11 @@ func (r *TypeRegistry) addMessage(md protoreflect.MessageDescriptor) error {
 			mi.PrintTemplates[k] = v
 		}
 		mi.Aliases = append(mi.Aliases, ext.Aliases...)
-		mi.TypeKey = TypeKey(ext.TypeKey)
+		// mi.TypeKey = TypeKey(ext.TypeKey) - TypeKey is now from hashing the fullname
 	}
 	r.fromFullname[mi.Fullname] = mi
 	r.fromTypeKey[[4]byte(mi.TypeKey)] = mi
+	log.Printf("added %s to registry", mi.Fullname)
 	return nil
 }
 
@@ -126,6 +129,21 @@ func (r *TypeRegistry) AddFile(fd protoreflect.FileDescriptor) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	if err := r.addFile(fd); err != nil {
+		return err
+	}
+	return r.refresh()
+}
+
+func (r *TypeRegistry) AddFileFromProtoFileDescriptor(fd *descriptorpb.FileDescriptorProto) error {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	o := protodesc.FileOptions{}
+	pfd, err := o.New(fd, r.files)
+	if err != nil {
+		return err
+	}
+	if err := r.addFile(pfd); err != nil {
 		return err
 	}
 	return r.refresh()
@@ -163,6 +181,21 @@ func (r *TypeRegistry) refresh() error {
 	return err
 }
 
+func (r *TypeRegistry) CreateEmptyObject(tk TypeKey) (IObject, error) {
+	mi, ok := r.fromTypeKey[tk]
+	if !ok {
+		return nil, ErrNotFound
+
+	}
+	var obj IObject
+	if mi.IsDynamic {
+		obj = &DynObject{Message: mi.MessageType.New().Interface().(*dynamicpb.Message)}
+	} else {
+		obj = mi.MessageType.New().Interface().(IObject)
+	}
+	return obj, nil
+}
+
 func (r *TypeRegistry) CreateObject(spec interface{}) (IObject, error) {
 	var (
 		mi *MessageInfo
@@ -178,19 +211,35 @@ func (r *TypeRegistry) CreateObject(spec interface{}) (IObject, error) {
 		if !ok {
 			return nil, fmt.Errorf("message with fullname [%s] not found", s)
 		}
-	case []byte:
-		mi, ok = r.fromTypeKey[TypeKey(s)]
+	case TypeKey:
+		mi, ok = r.fromTypeKey[s]
 		if !ok {
 			return nil, fmt.Errorf("message with TypeKey [%X] not found", s)
 		}
 	default:
 		return nil, fmt.Errorf("unknown type spec: [%v]", spec)
 	}
-
-	if !mi.IsDynamic {
-		return mi.MessageType.New().Interface().(IObject), nil
+	var obj IObject
+	if mi.IsDynamic {
+		obj = &DynObject{Message: mi.MessageType.New().Interface().(*dynamicpb.Message)}
+	} else {
+		obj = mi.MessageType.New().Interface().(IObject)
 	}
-	return &DynObject{Message: mi.MessageType.New().Interface().(*dynamicpb.Message)}, nil
+
+	// Create a Metadata field
+	fd := obj.ProtoReflect().Descriptor().Fields().ByName("metadata")
+	newUuid, err := uuid.New().MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	md := &Metadata{
+		Type:      mi.TypeKey[:],
+		Uuid:      newUuid,
+		Labels:    []string{},
+		CreatedAt: timestamppb.Now()}
+	mdVal := protoreflect.ValueOfMessage(md.ProtoReflect())
+	obj.ProtoReflect().Set(fd, mdVal)
+	return obj, nil
 }
 
 type DynObject struct {
@@ -206,7 +255,7 @@ func (o *DynObject) GetMetadata() *Metadata {
 	}
 	metaVal := o.Get(fd).Message()
 	for i := 0; i < metaMd.Fields().Len(); i++ {
-		switch fd := metaMd.Fields().Get(i); fd.Index() {
+		switch fd := metaMd.Fields().Get(i); fd.Number() {
 		case 1: // "type"
 			m.Type = metaVal.Get(fd).Bytes()
 		case 2: // "uuid"
@@ -263,4 +312,21 @@ func (r *TypeRegistry) LoadSchema() (err error) {
 
 	r.files = files
 	return r.refresh()
+}
+
+func (r *TypeRegistry) GetFileDescriptorSet() *descriptorpb.FileDescriptorSet {
+	fileSet := &descriptorpb.FileDescriptorSet{}
+	r.files.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		fileSet.File = append(fileSet.File, protodesc.ToFileDescriptorProto(fd))
+		return true
+	})
+	return fileSet
+}
+
+func (r *TypeRegistry) GetTypeNames() map[string][]string {
+	res := map[string][]string{}
+	for _, v := range r.fromTypeKey {
+		res[v.Fullname] = v.Aliases
+	}
+	return res
 }

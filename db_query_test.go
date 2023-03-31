@@ -131,10 +131,6 @@ func TestQueryFilter(t *testing.T) {
 
 func ExampleQuery() {
 	Init(path.Join(os.TempDir(), "example_query.db"))
-	Register("TObject", &TObject{
-		Metadata: &Metadata{Type: TObj[:]},
-		MyString: "The flying duck is flying low"})
-
 	count := 100
 	pageSize := 10
 

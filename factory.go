@@ -17,7 +17,6 @@ package shdb
 import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -42,28 +41,6 @@ type KeyVal struct {
 
 // TypeKey is the four bytes that identifies the type of an object
 type TypeKey = [4]byte
-
-type typeInfo struct {
-	typeKey      TypeKey
-	tmplVal      proto.Message
-	fullName     protoreflect.FullName
-	friendlyName string
-}
-
-var typeRegistry = map[TypeKey]typeInfo{}
-var fnIndex = map[protoreflect.FullName]TypeKey{}
-
-// Register an IObject and it's friendly name and type in the type table
-func Register[T IObject](name string, tmpl T) {
-	typeKey := TypeKey(tmpl.GetMetadata().Type)
-	typeRegistry[typeKey] = typeInfo{
-		typeKey:      typeKey,
-		tmplVal:      proto.Clone(tmpl),
-		fullName:     tmpl.ProtoReflect().Descriptor().FullName(),
-		friendlyName: name,
-	}
-	fnIndex[tmpl.ProtoReflect().Descriptor().FullName()] = typeKey
-}
 
 // New creates a new IObject based on the type key and initializes
 // the Metadata fields.
@@ -96,30 +73,22 @@ func MustNew[T IObject](typeKey TypeKey) T {
 }
 
 func create(typeKey TypeKey) (proto.Message, error) {
-	tInfo, ok := typeRegistry[typeKey]
-	if !ok {
+	obj, err := typeRegistry.CreateObject(typeKey)
+	if err != nil {
 		return nil, ErrNotAnObject
 	}
-	obj := proto.Clone(tInfo.tmplVal)
-	return obj, nil
+	return obj, err
 }
 
 // Create just creates the memory for an IObject without
 // initializing the Metadata
-func Create[T IObject](typeKey TypeKey) (T, error) {
-	tInfo, ok := typeRegistry[typeKey]
-	if !ok {
-		var t T
+func Create[T IObject](typeKey TypeKey) (t T, err error) {
+
+	obj, err := typeRegistry.CreateObject(typeKey)
+	if err != nil {
 		return t, ErrNotAnObject
 	}
-	obj := proto.Clone(tInfo.tmplVal)
-
-	b, ok := obj.(T)
-	if !ok {
-		var t T
-		return t, nil
-	}
-	return b, nil
+	return obj.(T), err
 }
 
 func unmarshal(kv KeyVal) (proto.Message, error) {
@@ -127,7 +96,6 @@ func unmarshal(kv KeyVal) (proto.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	obj.ProtoReflect().Descriptor().FullName()
 	if err = proto.Unmarshal(kv.Value, obj); err != nil {
 		return nil, err
 	}
@@ -168,16 +136,11 @@ func Marshal[T IObject](objs ...T) (ret []KeyVal, err error) {
 	if len(objs) == 0 {
 		return nil, nil
 	}
-	fn := objs[0].ProtoReflect().Descriptor().FullName()
-	typeKey, ok := fnIndex[fn]
-	if !ok {
-		return nil, ErrInvalidType
-	}
+	tk := objs[0].GetMetadata().TypeId().TypeKey()
 	ret = []KeyVal{}
-
 	for _, o := range objs {
 		kv := KeyVal{}
-		kv.SetType(typeKey)
+		kv.SetType(tk)
 		kv.SetUuidBytes(o.GetMetadata().Uuid)
 		kv.Value, err = proto.Marshal(o)
 		if err != nil {

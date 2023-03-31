@@ -25,8 +25,22 @@ import (
 )
 
 var (
-	TObj = TypeKey{1, 2, 3, 4}
+	TObj = TypeKeyOf("shdb.TObject")
 )
+
+func CreateTestDb() string {
+	tmpDir, err := os.MkdirTemp("", "shdb_test")
+	if err != nil {
+		panic(err)
+	}
+	Init(path.Join(tmpDir, "test.db"))
+	return tmpDir
+}
+
+func CloseTestDb(tmpDir string) {
+	Close()
+	os.RemoveAll(tmpDir)
+}
 
 func GenerateTestData(count int) ([]*TObject, string) {
 	tmpDir, err := os.MkdirTemp("", "shdb_test")
@@ -34,13 +48,11 @@ func GenerateTestData(count int) ([]*TObject, string) {
 		panic(err)
 	}
 	Init(path.Join(tmpDir, "test.db"))
-	Register("TObject", &TObject{
-		Metadata: &Metadata{Type: TObj[:]},
-		MyString: "Staffan Olsson was here"})
 
 	list := []*TObject{}
 	for k := 0; k < count; k++ {
 		tObj := MustNew[*TObject](TObj)
+		tObj.GetMetadata().Description = "Staffan Olsson was here"
 		tObj.MyInt = uint64(k)
 		list = append(list, tObj)
 	}
@@ -80,7 +92,7 @@ func TestDB(t *testing.T) {
 		Close()
 		os.Remove(dbFile)
 	}()
-	Register("TObject", &TObject{Metadata: &Metadata{Type: TObj[:]}})
+
 	t1 := MustNew[*TObject](TObj)
 
 	if t1.GetMetadata().CreatedAt.Seconds == 0 {

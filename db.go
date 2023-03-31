@@ -15,6 +15,8 @@
 package shdb
 
 import (
+	"errors"
+
 	"go.etcd.io/bbolt"
 )
 
@@ -22,6 +24,7 @@ var (
 	bucket_obj    = []byte("obj")
 	bucket_schema = []byte("schema")
 	db            *bbolt.DB
+	typeRegistry  *TypeRegistry
 )
 
 // Init initializes the backing database.
@@ -36,6 +39,16 @@ func Init(dbFile string) {
 		tx.CreateBucketIfNotExists(bucket_schema)
 		return nil
 	})
+	typeRegistry = NewTypeRegistry()
+	err = typeRegistry.LoadSchema()
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			err = typeRegistry.refresh()
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
 }
 
 // Close the backing database

@@ -17,6 +17,7 @@ option go_package = "github.com/shenrytech/shdb";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/descriptor.proto";
+import "google/protobuf/empty.proto";
 
 /*
 
@@ -58,6 +59,9 @@ service ObjectService {
   rpc Create(CreateReq) returns (Object);
   rpc Update(UpdateReq) returns (Object);
   rpc Delete(DeleteReq) returns (Object);
+
+  rpc GetSchema(google.protobuf.Empty) returns (google.protobuf.FileDescriptorSet);
+  rpc GetTypeNames(google.protobuf.Empty) returns (GetTypeNamesRsp);
 }
 
 message Object {
@@ -91,6 +95,16 @@ message Shdb_Message_Options {
   map<string,string> print_templates = 4;
 }
 
+
+
+message GetTypeNamesRsp {
+  message TypeAliases {
+    string fullname = 1;
+    repeated string aliased = 2
+  };
+  repeated TypeAliases type_aliases = 1; 
+}
+
 extend google.protobuf.MessageOptions {
   optional Shdb_Message_Options shdb_options = 52000;
 }
@@ -100,3 +114,4 @@ extend google.protobuf.MessageOptions {
   optional string shdb_aliases = 51235;
   optional bytes shdb_type_key = 51236;
 }
+

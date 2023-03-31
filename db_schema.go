@@ -57,6 +57,7 @@ func LoadSchema() (*descriptorpb.FileDescriptorSet, error) {
 		if payload == nil {
 			return ErrNotFound
 		}
+		data = make([]byte, len(payload))
 		copy(data, payload)
 		return nil
 	})

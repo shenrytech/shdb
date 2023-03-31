@@ -20,8 +20,10 @@ import (
 )
 
 func TestGet(t *testing.T) {
-	var TObj = TypeKey{0, 0, 0, 1}
-	Register("TObject", &TObject{Metadata: &Metadata{Type: TObj[:]}})
+	tmpDir := CreateTestDb()
+	defer CloseTestDb(tmpDir)
+
+	TObj := TypeKeyOf("shdb.TObject")
 	a := MustNew[*TObject](TObj)
 	data, _ := Marshal(a)
 
