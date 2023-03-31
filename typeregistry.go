@@ -330,3 +330,9 @@ func (r *TypeRegistry) GetTypeNames() map[string][]string {
 	}
 	return res
 }
+
+func (r *TypeRegistry) UseFileDescriptorSet(fds *descriptorpb.FileDescriptorSet) (err error) {
+	r.files = nil
+	r.files, err = protodesc.NewFiles(fds)
+	return
+}

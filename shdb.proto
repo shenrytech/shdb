@@ -100,7 +100,7 @@ message Shdb_Message_Options {
 message GetTypeNamesRsp {
   message TypeAliases {
     string fullname = 1;
-    repeated string aliased = 2
+    repeated string aliased = 2;
   };
   repeated TypeAliases type_aliases = 1; 
 }
