@@ -49,7 +49,7 @@ func main() {
 
 	rootCmd.PersistentFlags().String("address", "localhost:3335", "address to database server")
 	viper.BindPFlag("address", rootCmd.PersistentFlags().Lookup("address"))
-	shdbcli.AddGet(context.Background(), rootCmd, func(state interface{}) *grpc.ClientConn { return cc })
+	shdbcli.AddGet(context.Background(), rootCmd, func() *grpc.ClientConn { return cc })
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

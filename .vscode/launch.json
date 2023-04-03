@@ -17,6 +17,30 @@
             ]
         },
         {
+            "name": "shdbcli shd<tab><tab>",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/shdbcli/main/shdbcli.go",
+            "args": [
+                "__complete",
+                "get",
+                "shd"
+            ]
+        },
+        {
+            "name": "shdbcli get nisse 9<tab><tab>",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/shdbcli/main/shdbcli.go",
+            "args": [
+                "__complete",
+                "get",
+                "nisse", "9"
+            ]
+        },
+        {
             "name": "shdbd",
             "type": "go",
             "request": "launch",

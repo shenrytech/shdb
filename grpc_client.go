@@ -43,8 +43,7 @@ func (c *Client) Get(ctx context.Context, tid TypeId) (IObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	kv := KeyVal{TypeId: *ref.TypeId(), Value: o.Value}
-	return Unmarshal[IObject](kv)
+	return c.TypeRegistry().Unmarshal(o.Key, o.Value)
 }
 
 func (c *Client) List(ctx context.Context, tid TypeId) ([]IObject, error) {

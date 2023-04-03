@@ -15,59 +15,36 @@
 package shdbcli
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/shenrytech/shdb"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type Cli struct {
 }
 
-type ShdbContextKey struct{}
-type ShdbContextVal struct {
-	ClientConnAccessor func(state interface{}) *grpc.ClientConn
-}
+var ccAccessor func() *grpc.ClientConn
 
 func ValidArgsFunction(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	ctxVal, ok := cmd.Context().Value(ShdbContextKey{}).(ShdbContextVal)
-	if !ok {
-		fmt.Printf("failed to connect to server")
-		return nil, cobra.ShellCompDirectiveError
-	}
-	cc := ctxVal.ClientConnAccessor(nil)
+	cc := ccAccessor()
 	cli := shdb.NewClient(cmd.Context(), cc)
-	s := strings.Split(toComplete, " ")
-	switch len(s) {
+	switch len(args) {
+	case 0:
+		return completeType(cli, toComplete)
 	case 1:
-		return completeType(cli, s[0])
-	case 2:
-		return completeId(cli, s[0], s[1])
+		return completeId(cli, args[0], toComplete)
 	}
 	return nil, cobra.ShellCompDirectiveError
 }
 
 func get(cmd *cobra.Command, args []string) error {
-	ctxVal, ok := cmd.Context().Value(ShdbContextKey{}).(ShdbContextVal)
-	if !ok {
-		return errors.New("failed to connect to server")
-	}
-	cc := ctxVal.ClientConnAccessor(nil)
-	cli := shdb.NewObjectServiceClient(cc)
-	schema, err := cli.GetSchema(cmd.Context(), &emptypb.Empty{})
-	if err != nil {
-		return fmt.Errorf("failed to fetch db schema: [%v]", err)
-	}
-	tr := shdb.NewTypeRegistry()
-	if err := tr.UseFileDescriptorSet(schema); err != nil {
-		fmt.Printf("failed to use db schema [%v]", err)
-	}
+	cc := ccAccessor()
+	cli := shdb.NewClient(cmd.Context(), cc)
+
 	id, err := uuid.Parse(args[1])
 	if err != nil {
 		return err
@@ -76,7 +53,7 @@ func get(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	tk, err := tr.GetTypeKeyFromToA(args[0])
+	tk, err := cli.TypeRegistry().GetTypeKeyFromToA(args[0])
 	if err != nil {
 		return err
 	}
@@ -84,7 +61,7 @@ func get(cmd *cobra.Command, args []string) error {
 		Type: tk[:],
 		Uuid: bid,
 	}
-	obj, err := cli.Get(cmd.Context(), &shdb.GetReq{Ref: ref})
+	obj, err := cli.Get(cmd.Context(), *ref.TypeId())
 	if err != nil {
 		return err
 	}
@@ -101,8 +78,7 @@ var getCmd = &cobra.Command{
 	ValidArgsFunction: ValidArgsFunction,
 }
 
-func AddGet(ctx context.Context, parent *cobra.Command, ccAccessor func(state interface{}) *grpc.ClientConn) {
-	ct := context.WithValue(ctx, ShdbContextKey{}, ShdbContextVal{ClientConnAccessor: ccAccessor})
-	getCmd.SetContext(ct)
+func AddGet(ctx context.Context, parent *cobra.Command, ccAccess func() *grpc.ClientConn) {
+	ccAccessor = ccAccess
 	parent.AddCommand(getCmd)
 }

@@ -28,14 +28,20 @@ func UnmarshalObjRef(data []byte) (*ObjRef, error) {
 		return nil, ErrInvalidType
 	}
 	res := &ObjRef{}
-	copy(res.Type, data[:4])
-	copy(res.Uuid, data[4:])
+	res.Type = data[:4]
+	res.Uuid = data[4:]
 	return res, nil
 }
 
 // TypeId returns the ObjRef as a *TypeId
 func (r *ObjRef) TypeId() *TypeId {
 	res := &TypeId{}
+	if len(r.Type) != 4 {
+		panic("invalid ObjRef")
+	}
+	if len(r.Uuid) != 16 {
+		panic("invalid ObjRef")
+	}
 	copy(res.data[:4], r.Type)
 	copy(res.data[4:], r.Uuid)
 	return res

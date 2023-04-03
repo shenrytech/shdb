@@ -65,6 +65,7 @@ func NewTypeRegistry() *TypeRegistry {
 		types:        protoregistry.GlobalTypes,
 		files:        protoregistry.GlobalFiles,
 	}
+	r.refresh()
 	return r
 }
 
@@ -112,7 +113,6 @@ func (r *TypeRegistry) addMessage(md protoreflect.MessageDescriptor) error {
 	}
 	r.fromFullname[mi.Fullname] = mi
 	r.fromTypeKey[[4]byte(mi.TypeKey)] = mi
-	log.Printf("added %s to registry", mi.Fullname)
 	return nil
 }
 
@@ -358,4 +358,15 @@ func (r *TypeRegistry) GetTypeKeyFromToA(toa string) (TypeKey, error) {
 		}
 	}
 	return TypeKey{}, ErrNotFound
+}
+
+func (r *TypeRegistry) Unmarshal(key []byte, value []byte) (IObject, error) {
+	obj, err := r.CreateEmptyObject(TypeKey(key))
+	if err != nil {
+		return nil, err
+	}
+	if err = proto.Unmarshal(value, obj); err != nil {
+		return nil, err
+	}
+	return obj, err
 }

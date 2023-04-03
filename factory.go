@@ -111,7 +111,6 @@ func Unmarshal[T IObject](kv KeyVal) (T, error) {
 		var t T
 		return t, err
 	}
-	obj.ProtoReflect().Descriptor().FullName()
 	if err = proto.Unmarshal(kv.Value, obj); err != nil {
 		var t T
 		return t, err
