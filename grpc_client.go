@@ -15,19 +15,23 @@ package shdb
 
 import (
 	"context"
+	"io"
+	"log"
 
 	grpc "google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type Client struct {
-	cc  *grpc.ClientConn
-	cli ObjectServiceClient
-	ctx context.Context
+	cc      *grpc.ClientConn
+	cli     ObjectServiceClient
+	ctx     context.Context
+	typeReg *TypeRegistry
 }
 
 // NewClient returns a new client for use with the API
 func NewClient(ctx context.Context, cc *grpc.ClientConn) *Client {
-	return &Client{ctx: ctx, cc: cc, cli: NewObjectServiceClient(cc)}
+	return &Client{ctx: ctx, cc: cc, cli: NewObjectServiceClient(cc), typeReg: nil}
 }
 
 func (c *Client) Get(ctx context.Context, tid TypeId) (IObject, error) {
@@ -98,4 +102,57 @@ func (c *Client) Update(ctx context.Context, obj IObject) (IObject, error) {
 	}
 	kv := KeyVal{TypeId: *MarshalTypeId(rsp.Key), Value: o.Value}
 	return Unmarshal[IObject](kv)
+}
+
+func (c *Client) TypeRegistry() *TypeRegistry {
+	if c.typeReg == nil {
+		schema, err := c.cli.GetSchema(c.ctx, &emptypb.Empty{})
+		if err != nil {
+			panic(err)
+		}
+		c.typeReg = NewTypeRegistry()
+		if err := c.typeReg.UseFileDescriptorSet(schema); err != nil {
+			panic(err)
+		}
+	}
+	return c.typeReg
+}
+
+func (c *Client) GetTypeNames() (map[string][]string, error) {
+	rsp, err := c.cli.GetTypeNames(c.ctx, &emptypb.Empty{})
+	res := map[string][]string{}
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range rsp.TypeAliases {
+		res[v.Fullname] = v.Aliases
+	}
+	return res, nil
+}
+
+func (c *Client) SearchRef(tk TypeKey, selector func(obj *ObjRef) bool) (chan *ObjRef, error) {
+	ch := make(chan *ObjRef, 10)
+	req := &StreamRefReq{
+		TypeKey: tk[:],
+	}
+	stream, err := c.cli.StreamRefs(c.ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	go func() {
+		defer close(ch)
+		for {
+			ref, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Fatalf("%v.StreamRefs(_) = _, %v", c.cli, err)
+			}
+			if selector(ref) {
+				ch <- ref
+			}
+		}
+	}()
+	return ch, nil
 }

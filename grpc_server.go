@@ -15,24 +15,29 @@
 package shdb
 
 import (
+	"bytes"
 	"context"
 
 	"google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type Server struct {
 	UnimplementedObjectServiceServer
-	ctx context.Context
-	gs  *grpc.Server
+	ctx     context.Context
+	gs      *grpc.Server
+	typeReg *TypeRegistry
 }
 
-func NewServer(ctx context.Context, grpcServer *grpc.Server) *Server {
+func NewServer(ctx context.Context, grpcServer *grpc.Server, typeReg *TypeRegistry) *Server {
 	s := &Server{
-		ctx: ctx,
-		gs:  grpcServer,
+		ctx:     ctx,
+		gs:      grpcServer,
+		typeReg: typeReg,
 	}
 	RegisterObjectServiceServer(grpcServer, s)
 	return s
@@ -56,7 +61,7 @@ func (s *Server) List(ctx context.Context, req *ListReq) (*ListRsp, error) {
 }
 
 func (s *Server) Get(ctx context.Context, req *GetReq) (*Object, error) {
-	kv, err := get(*MarshalTypeId(req.Ref.Type))
+	kv, err := get(*req.Ref.TypeId())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed retrieve an object")
 	}
@@ -108,4 +113,39 @@ func (s *Server) Delete(ctx context.Context, req *DeleteReq) (*Object, error) {
 		return nil, status.Errorf(codes.Internal, "failed to delete object %v", err)
 	}
 	return &Object{Key: kvs[0].Key(), Value: kvs[0].Value}, nil
+}
+
+func (s *Server) GetSchema(ctx context.Context, req *emptypb.Empty) (*descriptorpb.FileDescriptorSet, error) {
+	return s.typeReg.GetFileDescriptorSet(), nil
+}
+
+func (s *Server) GetTypeNames(ctx context.Context, req *emptypb.Empty) (*GetTypeNamesRsp, error) {
+	rsp := &GetTypeNamesRsp{TypeAliases: []*GetTypeNamesRsp_TypeAliases{}}
+	tns := s.typeReg.GetTypeNames()
+	for k, v := range tns {
+		rsp.TypeAliases = append(rsp.TypeAliases, &GetTypeNamesRsp_TypeAliases{
+			Fullname: k,
+			Aliases:  v,
+		})
+	}
+	return rsp, nil
+}
+
+func (s *Server) StreamRefs(req *StreamRefReq, stream ObjectService_StreamRefsServer) error {
+	selector := func(obj *ObjRef) bool {
+		if bytes.Equal(req.TypeKey, TypeKeyAll[:]) {
+			return true
+		}
+		return bytes.Equal(req.TypeKey, obj.Type)
+	}
+	refs, _, err := SearchRef(stream.Context(), selector, 1000000, "")
+	if err != nil {
+		return status.Errorf(codes.Internal, "query ref failed")
+	}
+	for _, v := range refs {
+		if err := stream.Send(v); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -16,6 +16,7 @@ package shdb
 
 import (
 	"errors"
+	"log"
 
 	"go.etcd.io/bbolt"
 )
@@ -44,10 +45,13 @@ func Init(dbFile string) {
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			err = typeRegistry.refresh()
+			log.Println("loaded schema from runtime")
 			if err != nil {
 				panic(err)
 			}
 		}
+	} else {
+		log.Println("loaded schema from database")
 	}
 }
 

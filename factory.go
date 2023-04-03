@@ -42,6 +42,8 @@ type KeyVal struct {
 // TypeKey is the four bytes that identifies the type of an object
 type TypeKey = [4]byte
 
+var TypeKeyAll = TypeKey{0xff, 0xff, 0xff, 0xff}
+
 // New creates a new IObject based on the type key and initializes
 // the Metadata fields.
 func New[T IObject](typeKey TypeKey) (obj T, err error) {

@@ -68,6 +68,13 @@ func NewTypeRegistry() *TypeRegistry {
 	return r
 }
 
+func (r *TypeRegistry) clear() {
+	r.fromFullname = nil
+	r.fromTypeKey = nil
+	r.fromFullname = map[string]*MessageInfo{}
+	r.fromTypeKey = map[TypeKey]*MessageInfo{}
+}
+
 func (r *TypeRegistry) addMessage(md protoreflect.MessageDescriptor) error {
 	mi := &MessageInfo{
 		Fullname:       string(md.FullName()),
@@ -334,5 +341,21 @@ func (r *TypeRegistry) GetTypeNames() map[string][]string {
 func (r *TypeRegistry) UseFileDescriptorSet(fds *descriptorpb.FileDescriptorSet) (err error) {
 	r.files = nil
 	r.files, err = protodesc.NewFiles(fds)
+	r.clear()
+	r.refresh()
 	return
+}
+
+func (r *TypeRegistry) GetTypeKeyFromToA(toa string) (TypeKey, error) {
+	for k, v := range r.fromTypeKey {
+		if v.Fullname == toa {
+			return k, nil
+		}
+		for _, alias := range v.Aliases {
+			if alias == toa {
+				return k, nil
+			}
+		}
+	}
+	return TypeKey{}, ErrNotFound
 }

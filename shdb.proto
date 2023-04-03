@@ -60,7 +60,10 @@ service ObjectService {
   rpc Update(UpdateReq) returns (Object);
   rpc Delete(DeleteReq) returns (Object);
 
-  rpc GetSchema(google.protobuf.Empty) returns (google.protobuf.FileDescriptorSet);
+  rpc StreamRefs(StreamRefReq) returns (stream ObjRef);
+
+  rpc GetSchema(google.protobuf.Empty)
+      returns (google.protobuf.FileDescriptorSet);
   rpc GetTypeNames(google.protobuf.Empty) returns (GetTypeNamesRsp);
 }
 
@@ -92,17 +95,19 @@ message Shdb_Message_Options {
   string type = 1;
   repeated string aliases = 2;
   bytes type_key = 3;
-  map<string,string> print_templates = 4;
+  map<string, string> print_templates = 4;
 }
-
-
 
 message GetTypeNamesRsp {
   message TypeAliases {
     string fullname = 1;
-    repeated string aliased = 2;
+    repeated string aliases = 2;
   };
-  repeated TypeAliases type_aliases = 1; 
+  repeated TypeAliases type_aliases = 1;
+}
+
+message StreamRefReq {
+  bytes type_key = 1;
 }
 
 extend google.protobuf.MessageOptions {
@@ -114,4 +119,3 @@ extend google.protobuf.MessageOptions {
   optional string shdb_aliases = 51235;
   optional bytes shdb_type_key = 51236;
 }
-

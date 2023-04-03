@@ -184,6 +184,27 @@ func Delete[T IObject](tid TypeId) (T, error) {
 
 }
 
+// Delete all objects of a specific type from the database.
+func DeleteAll(tk TypeKey) error {
+	deleted := []IObject{}
+	err := db.Update(func(tx *bbolt.Tx) error {
+		c := tx.Bucket(bucket_obj).Cursor()
+		for k, v := c.Seek(tk[:]); k != nil && bytes.HasPrefix(k, tk[:]); k, v = c.Next() {
+			kv := KeyVal{TypeId: *MarshalTypeId(k), Value: v}
+			t, err := Unmarshal[IObject](kv)
+			if err != nil {
+				deleted = append(deleted, t)
+			}
+		}
+		return nil
+	})
+	for _, d := range deleted {
+		notifyDelete(d)
+	}
+	return err
+
+}
+
 // GetAllKV returns all KeyVals of the database.
 func GetAllKV(typeKey TypeKey) ([]KeyVal, error) {
 	allKvs := []KeyVal{}

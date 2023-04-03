@@ -65,9 +65,9 @@ func NewTypeId(typeKey TypeKey, id []byte) *TypeId {
 }
 
 // MarshalTypeId creates a TypeId from a []byte slice
-func MarshalTypeId(key []byte) *TypeId {
+func MarshalTypeId(data []byte) *TypeId {
 	ret := &TypeId{}
-	copy(ret.data[:], key)
+	copy(ret.data[:], data)
 	return ret
 }
 
