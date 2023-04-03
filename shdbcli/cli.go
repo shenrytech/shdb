@@ -15,11 +15,10 @@
 package shdbcli
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/shenrytech/shdb"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -29,7 +28,7 @@ type Cli struct {
 
 var ccAccessor func() *grpc.ClientConn
 
-func ValidArgsFunction(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func ValidTypeIdArgFn(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	cc := ccAccessor()
 	cli := shdb.NewClient(cmd.Context(), cc)
 	switch len(args) {
@@ -41,10 +40,15 @@ func ValidArgsFunction(cmd *cobra.Command, args []string, toComplete string) ([]
 	return nil, cobra.ShellCompDirectiveError
 }
 
+func ValidTypeArgFn(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	cc := ccAccessor()
+	cli := shdb.NewClient(cmd.Context(), cc)
+	return completeType(cli, toComplete)
+}
+
 func get(cmd *cobra.Command, args []string) error {
 	cc := ccAccessor()
 	cli := shdb.NewClient(cmd.Context(), cc)
-
 	id, err := uuid.Parse(args[1])
 	if err != nil {
 		return err
@@ -65,7 +69,28 @@ func get(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(obj)
+	return output(cli.TypeRegistry(), obj, viper.GetString("output"))
+}
+
+func list(cmd *cobra.Command, args []string) error {
+	cc := ccAccessor()
+	cli := shdb.NewClient(cmd.Context(), cc)
+
+	tk, err := cli.TypeRegistry().GetTypeKeyFromToA(args[0])
+	if err != nil {
+		return err
+	}
+
+	obj, err := cli.List(cmd.Context(), tk)
+	if err != nil {
+		return err
+	}
+	tr := cli.TypeRegistry()
+	for _, v := range obj {
+		if err := output(tr, v, "list"); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -75,10 +100,21 @@ var getCmd = &cobra.Command{
 	Short:             "retrieve an IObject",
 	RunE:              get,
 	Args:              cobra.ExactArgs(2),
-	ValidArgsFunction: ValidArgsFunction,
+	ValidArgsFunction: ValidTypeIdArgFn,
+}
+
+var listCmd = &cobra.Command{
+	Use:               "list <fullname|alias>",
+	Short:             "list objects of a specific type",
+	RunE:              list,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: ValidTypeArgFn,
 }
 
 func AddGet(ctx context.Context, parent *cobra.Command, ccAccess func() *grpc.ClientConn) {
 	ccAccessor = ccAccess
+	getCmd.PersistentFlags().StringP("output", "o", "yaml", "output format [json|yaml|brief|list|detail|\"<go template>\"]")
+	viper.BindPFlag("output", getCmd.PersistentFlags().Lookup("output"))
 	parent.AddCommand(getCmd)
+	parent.AddCommand(listCmd)
 }

@@ -42,11 +42,7 @@ message TObject {
   option (shdb_options) = {
     type : 'TObject'
     aliases : [ 'tobj', 'nisse' ]
-    type_key : '\x23\x24'
-    print_templates : {key : 'item_simple' value : 'asdasdasd'}
-    print_templates : {key : 'item_full' value : 'asdasdasd'}
-    print_templates : {key : 'list_simple' value : 'asdasdasd'}
-    print_templates : {key : 'list_full' value : 'asdasdasd'}
-
+    print_templates : {key : 'brief' value : 'TObject: {{.my_int}}'}
+    print_templates : {key : 'detailed' value : 'TObject {{.metadata.uuid}} my_int: {{.my_int}}'}
   };
 }

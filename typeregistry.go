@@ -370,3 +370,11 @@ func (r *TypeRegistry) Unmarshal(key []byte, value []byte) (IObject, error) {
 	}
 	return obj, err
 }
+
+func (r *TypeRegistry) GetMessageInfo(tk TypeKey) (MessageInfo, error) {
+	mi, ok := r.fromTypeKey[tk]
+	if !ok {
+		return MessageInfo{}, ErrNotFound
+	}
+	return *mi, nil
+}

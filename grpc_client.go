@@ -46,19 +46,20 @@ func (c *Client) Get(ctx context.Context, tid TypeId) (IObject, error) {
 	return c.TypeRegistry().Unmarshal(o.Key, o.Value)
 }
 
-func (c *Client) List(ctx context.Context, tid TypeId) ([]IObject, error) {
-	ref, err := UnmarshalObjRef(tid.Key())
-	if err != nil {
-		return nil, err
+func (c *Client) List(ctx context.Context, tk TypeKey) ([]IObject, error) {
+	// Let's not complicate things. Get only first 100000 objects...
+	req := &ListReq{
+		Type:      tk[:],
+		PageSize:  100000,
+		PageToken: "",
 	}
-	rsp, err := c.cli.List(ctx, &ListReq{PageSize: 100000, PageToken: ""})
+	rsp, err := c.cli.List(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	res := []IObject{}
 	for _, v := range rsp.Objects {
-		kv := KeyVal{TypeId: *ref.TypeId(), Value: v.Value}
-		obj, err := Unmarshal[IObject](kv)
+		obj, err := c.TypeRegistry().Unmarshal(v.Key, v.Value)
 		if err != nil {
 			return nil, err
 		}
@@ -76,8 +77,7 @@ func (c *Client) Delete(ctx context.Context, tid TypeId) (IObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	kv := KeyVal{TypeId: *ref.TypeId(), Value: rsp.Value}
-	return Unmarshal[IObject](kv)
+	return c.TypeRegistry().Unmarshal(rsp.Key, rsp.Value)
 }
 
 func (c *Client) Create(ctx context.Context, typ TypeKey) (IObject, error) {
@@ -85,8 +85,7 @@ func (c *Client) Create(ctx context.Context, typ TypeKey) (IObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	kv := KeyVal{TypeId: *MarshalTypeId(rsp.Key), Value: rsp.Value}
-	return Unmarshal[IObject](kv)
+	return c.TypeRegistry().Unmarshal(rsp.Key, rsp.Value)
 }
 
 func (c *Client) Update(ctx context.Context, obj IObject) (IObject, error) {
@@ -99,8 +98,7 @@ func (c *Client) Update(ctx context.Context, obj IObject) (IObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	kv := KeyVal{TypeId: *MarshalTypeId(rsp.Key), Value: o.Value}
-	return Unmarshal[IObject](kv)
+	return c.TypeRegistry().Unmarshal(rsp.Key, rsp.Value)
 }
 
 func (c *Client) TypeRegistry() *TypeRegistry {
