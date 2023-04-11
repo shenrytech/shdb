@@ -25,7 +25,7 @@ import (
 
 func CreateTestFileDescriptor() *descriptorpb.FileDescriptorProto {
 	sp := func(str string) *string { return &str }
-	a := protodesc.ToFileDescriptorProto(File_test_proto)
+	a := protodesc.ToFileDescriptorProto(File_pb_shdb_v1_test_proto)
 	b := proto.Clone(a).(*descriptorpb.FileDescriptorProto)
 
 	b.Package = sp("shdb.test.volatile")
@@ -35,7 +35,7 @@ func CreateTestFileDescriptor() *descriptorpb.FileDescriptorProto {
 }
 
 func TestTR(t *testing.T) {
-	TObject := TypeKeyOf("shdb.TObject")
+	TObject := TypeKeyOf("shdb.v1.TObject")
 	r := NewTypeRegistry()
 	if err := r.refresh(); err != nil {
 		t.FailNow()

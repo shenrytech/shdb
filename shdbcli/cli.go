@@ -111,7 +111,7 @@ var listCmd = &cobra.Command{
 	ValidArgsFunction: ValidTypeArgFn,
 }
 
-func AddGet(ctx context.Context, parent *cobra.Command, ccAccess func() *grpc.ClientConn) {
+func AddCmds(ctx context.Context, parent *cobra.Command, ccAccess func() *grpc.ClientConn) {
 	ccAccessor = ccAccess
 	getCmd.PersistentFlags().StringP("output", "o", "yaml", "output format [json|yaml|brief|list|detail|\"<go template>\"]")
 	viper.BindPFlag("output", getCmd.PersistentFlags().Lookup("output"))

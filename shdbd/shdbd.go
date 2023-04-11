@@ -66,7 +66,7 @@ func uuidb(idx int) []byte {
 }
 
 func loadtd() {
-	TTObject := shdb.TypeKeyOf("shdb.TObject")
+	TTObject := shdb.TypeKeyOf("shdb.v1.TObject")
 	if err := shdb.DeleteAll(TTObject); err != nil {
 		panic(err)
 	}
@@ -88,7 +88,6 @@ func main() {
 	serverPort := flag.Int("grpc-port", 3335, "api server port to listen on")
 	dbFile := flag.String("dbfile", "/tmp/shdb.db", "database file")
 	loadTestData := flag.Bool("load-test-data", false, "load test data")
-
 	flag.Parse()
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", *serverPort))

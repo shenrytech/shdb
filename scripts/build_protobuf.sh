@@ -26,5 +26,5 @@ function build_pb() {
     printf "\n"
 }
 
-build_pb ${projRoot}/shdb.proto
-build_pb ${projRoot}/test.proto
+build_pb ${projRoot}/pb/shdb/v1/shdb.proto
+build_pb ${projRoot}/pb/shdb/v1/test.proto

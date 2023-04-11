@@ -30,7 +30,7 @@ import "google/protobuf/empty.proto";
     MessagePayload
 */
 
-package shdb;
+package shdb.v1;
 
 message Metadata {
   bytes type = 1;

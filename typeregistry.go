@@ -66,6 +66,10 @@ func NewTypeRegistry() *TypeRegistry {
 		files:        protoregistry.GlobalFiles,
 	}
 	r.refresh()
+	log.Println("Types registered:")
+	for _, v := range r.fromFullname {
+		log.Printf("%s: [%v]\n", v.Fullname, v.Aliases)
+	}
 	return r
 }
 
@@ -173,7 +177,7 @@ func (r *TypeRegistry) refresh() error {
 			if fmd == nil {
 				return true
 			}
-			if fmd.FullName() != "shdb.Metadata" {
+			if fmd.FullName() != "shdb.v1.Metadata" {
 				return true
 			}
 			// Include message if it's not already there

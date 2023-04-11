@@ -41,7 +41,7 @@
             ]
         },
         {
-            "name": "shdbcli get nisse 078038e6-a5f4-432a-a129-690689dcc3ca -o \"MyInt: {{.MyInt}}\"",
+            "name": "shdbcli get nisse 078038e6-a5f4-432a-a129-690689dcc3ca -o \"MyInt: {{.my_int}}\"",
             "type": "go",
             "request": "launch",
             "mode": "auto",
@@ -50,7 +50,7 @@
                 "get",
                 "nisse",
                 "078038e6-a5f4-432a-a129-690689dcc3ca",
-                "-o", "MyInt: {{.MyInt}}"
+                "-o", "MyInt: {{.my_int}}"
             ]
         },
         {
