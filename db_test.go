@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	TObj = TypeKeyOf("shdb.TObject")
+	TObj = TypeKeyOf("shdb.v1.TObject")
 )
 
 func CreateTestDb() string {

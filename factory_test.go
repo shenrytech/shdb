@@ -23,7 +23,7 @@ func TestGet(t *testing.T) {
 	tmpDir := CreateTestDb()
 	defer CloseTestDb(tmpDir)
 
-	TObj := TypeKeyOf("shdb.TObject")
+	TObj := TypeKeyOf("shdb.v1.TObject")
 	a := MustNew[*TObject](TObj)
 	data, _ := Marshal(a)
 

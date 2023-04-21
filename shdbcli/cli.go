@@ -26,11 +26,10 @@ import (
 type Cli struct {
 }
 
-var ccAccessor func() *grpc.ClientConn
+var ccAccessor func() (outgoingCtxt context.Context, cc *grpc.ClientConn)
 
 func ValidTypeIdArgFn(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	cc := ccAccessor()
-	cli := shdb.NewClient(cmd.Context(), cc)
+	cli := shdb.NewClient(ccAccessor())
 	switch len(args) {
 	case 0:
 		return completeType(cli, toComplete)
@@ -41,14 +40,12 @@ func ValidTypeIdArgFn(cmd *cobra.Command, args []string, toComplete string) ([]s
 }
 
 func ValidTypeArgFn(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	cc := ccAccessor()
-	cli := shdb.NewClient(cmd.Context(), cc)
+	cli := shdb.NewClient(ccAccessor())
 	return completeType(cli, toComplete)
 }
 
 func get(cmd *cobra.Command, args []string) error {
-	cc := ccAccessor()
-	cli := shdb.NewClient(cmd.Context(), cc)
+	cli := shdb.NewClient(ccAccessor())
 	id, err := uuid.Parse(args[1])
 	if err != nil {
 		return err
@@ -65,7 +62,7 @@ func get(cmd *cobra.Command, args []string) error {
 		Type: tk[:],
 		Uuid: bid,
 	}
-	obj, err := cli.Get(cmd.Context(), *ref.TypeId())
+	obj, err := cli.Get(*ref.TypeId())
 	if err != nil {
 		return err
 	}
@@ -73,15 +70,14 @@ func get(cmd *cobra.Command, args []string) error {
 }
 
 func list(cmd *cobra.Command, args []string) error {
-	cc := ccAccessor()
-	cli := shdb.NewClient(cmd.Context(), cc)
+	cli := shdb.NewClient(ccAccessor())
 
 	tk, err := cli.TypeRegistry().GetTypeKeyFromToA(args[0])
 	if err != nil {
 		return err
 	}
 
-	obj, err := cli.List(cmd.Context(), tk)
+	obj, err := cli.List(tk)
 	if err != nil {
 		return err
 	}
@@ -111,7 +107,7 @@ var listCmd = &cobra.Command{
 	ValidArgsFunction: ValidTypeArgFn,
 }
 
-func AddCmds(ctx context.Context, parent *cobra.Command, ccAccess func() *grpc.ClientConn) {
+func AddCmds(parent *cobra.Command, ccAccess func() (outgoingCtxt context.Context, cc *grpc.ClientConn)) {
 	ccAccessor = ccAccess
 	getCmd.PersistentFlags().StringP("output", "o", "yaml", "output format [json|yaml|brief|list|detail|\"<go template>\"]")
 	viper.BindPFlag("output", getCmd.PersistentFlags().Lookup("output"))

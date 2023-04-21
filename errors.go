@@ -28,4 +28,5 @@ var (
 	ErrNotFound         = errors.New("not found")
 	ErrSessionInvalid   = errors.New("session invalid")
 	ErrContextCancelled = errors.New("context cancelled")
+	ErrDatabaseCorrupt  = errors.New("database corrupt")
 )

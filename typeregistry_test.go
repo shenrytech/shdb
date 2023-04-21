@@ -103,10 +103,10 @@ func TestGetNames(t *testing.T) {
 		t.FailNow()
 	}
 	nameAliases := r.GetTypeNames()
-	if len(nameAliases) != 2 {
+	if len(nameAliases) != 3 {
 		t.FailNow()
 	}
-	if aliases1, ok := nameAliases["shdb.TObject"]; !ok {
+	if aliases1, ok := nameAliases["shdb.v1.TObject"]; !ok {
 		t.FailNow()
 	} else {
 		if len(aliases1) != 2 {

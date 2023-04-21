@@ -12,7 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Todo: Clean up Marshalling/Unmarshalling of ObjRef
+// Todo: Remove either ObjRef or TypeID. They do the same thing
+
 package shdb
+
+import (
+	"bytes"
+
+	"github.com/google/uuid"
+)
 
 // Marshal an ObjRef to a byte slice
 func (r *ObjRef) Marshal() []byte {
@@ -45,4 +54,75 @@ func (r *ObjRef) TypeId() *TypeId {
 	copy(res.data[:4], r.Type)
 	copy(res.data[4:], r.Uuid)
 	return res
+}
+
+func (r *ObjRef) UUID() uuid.UUID {
+	res, err := uuid.FromBytes(r.Uuid)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+func ObjRefFromUUID(typeKey TypeKey, id string) (*ObjRef, error) {
+	u, e := uuid.Parse(id)
+	if e != nil {
+		return nil, e
+	}
+	ub, e := u.MarshalBinary()
+	if e != nil {
+		return nil, e
+	}
+	res := &ObjRef{
+		Type: typeKey[:],
+		Uuid: ub,
+	}
+	return res, nil
+}
+
+func ParseObjRef(typeKey TypeKey, id interface{}) (*ObjRef, error) {
+	objRef := &ObjRef{
+		Type: typeKey[:],
+	}
+	var err error
+	switch val := id.(type) {
+	case uuid.UUID:
+		objRef.Uuid, err = val.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+	case string:
+		uuid, err := uuid.Parse(val)
+		if err != nil {
+			return nil, err
+		}
+		objRef.Uuid, err = uuid.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+	case []byte:
+		if len(val) != 16 {
+			return nil, ErrInvalidType
+		}
+		objRef.Uuid = bytes.Clone(val)
+	}
+	return objRef, nil
+}
+
+func MustParseObjRef(typeKey TypeKey, id interface{}) *ObjRef {
+	o, err := ParseObjRef(typeKey, id)
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+func (r *ObjRef) Equal(other *ObjRef) bool {
+	if other == nil {
+		return false
+	}
+	if !bytes.Equal(r.Type, other.Type) {
+		return false
+	}
+	return bytes.Equal(r.Uuid, other.Uuid)
 }

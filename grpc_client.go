@@ -34,26 +34,26 @@ func NewClient(ctx context.Context, cc *grpc.ClientConn) *Client {
 	return &Client{ctx: ctx, cc: cc, cli: NewObjectServiceClient(cc), typeReg: nil}
 }
 
-func (c *Client) Get(ctx context.Context, tid TypeId) (IObject, error) {
+func (c *Client) Get(tid TypeId) (IObject, error) {
 	ref, err := UnmarshalObjRef(tid.Key())
 	if err != nil {
 		return nil, err
 	}
-	o, err := c.cli.Get(ctx, &GetReq{Ref: ref})
+	o, err := c.cli.Get(c.ctx, &GetReq{Ref: ref})
 	if err != nil {
 		return nil, err
 	}
 	return c.TypeRegistry().Unmarshal(o.Key, o.Value)
 }
 
-func (c *Client) List(ctx context.Context, tk TypeKey) ([]IObject, error) {
+func (c *Client) List(tk TypeKey) ([]IObject, error) {
 	// Let's not complicate things. Get only first 100000 objects...
 	req := &ListReq{
 		Type:      tk[:],
 		PageSize:  100000,
 		PageToken: "",
 	}
-	rsp, err := c.cli.List(ctx, req)
+	rsp, err := c.cli.List(c.ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -68,33 +68,33 @@ func (c *Client) List(ctx context.Context, tk TypeKey) ([]IObject, error) {
 	return res, nil
 }
 
-func (c *Client) Delete(ctx context.Context, tid TypeId) (IObject, error) {
+func (c *Client) Delete(tid TypeId) (IObject, error) {
 	ref, err := UnmarshalObjRef(tid.Key())
 	if err != nil {
 		return nil, err
 	}
-	rsp, err := c.cli.Delete(ctx, &DeleteReq{Ref: ref})
+	rsp, err := c.cli.Delete(c.ctx, &DeleteReq{Ref: ref})
 	if err != nil {
 		return nil, err
 	}
 	return c.TypeRegistry().Unmarshal(rsp.Key, rsp.Value)
 }
 
-func (c *Client) Create(ctx context.Context, typ TypeKey) (IObject, error) {
-	rsp, err := c.cli.Create(ctx, &CreateReq{Type: typ[:]})
+func (c *Client) Create(typ TypeKey) (IObject, error) {
+	rsp, err := c.cli.Create(c.ctx, &CreateReq{Type: typ[:]})
 	if err != nil {
 		return nil, err
 	}
 	return c.TypeRegistry().Unmarshal(rsp.Key, rsp.Value)
 }
 
-func (c *Client) Update(ctx context.Context, obj IObject) (IObject, error) {
+func (c *Client) Update(obj IObject) (IObject, error) {
 	kvs, err := Marshal(obj)
 	if err != nil {
 		return nil, err
 	}
 	o := &Object{Key: kvs[0].Key(), Value: kvs[0].Value}
-	rsp, err := c.cli.Update(ctx, &UpdateReq{Object: o})
+	rsp, err := c.cli.Update(c.ctx, &UpdateReq{Object: o})
 	if err != nil {
 		return nil, err
 	}

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Todo: Clean up all variants of marshalling/unmarshalling TypeIDs
+
 package shdb
 
 import (
@@ -61,6 +63,39 @@ func NewTypeId(typeKey TypeKey, id []byte) *TypeId {
 	ret := &TypeId{}
 	ret.SetType(typeKey)
 	ret.SetUuidBytes(id)
+	return ret
+}
+
+func ParseTypeId(typeKey TypeKey, id interface{}) (tid TypeId, err error) {
+	tid.SetType(typeKey)
+	switch val := id.(type) {
+	case uuid.UUID:
+		data, e := val.MarshalBinary()
+		if e != nil {
+			return tid, e
+		}
+		tid.SetUuidBytes(data)
+	case string:
+		uuid, err := uuid.Parse(val)
+		if err != nil {
+			return tid, err
+		}
+		data, err := uuid.MarshalBinary()
+		if err != nil {
+			return tid, err
+		}
+		tid.SetUuidBytes(data)
+	case []byte:
+		tid.SetUuidBytes(val)
+	}
+	return
+}
+
+func MustParseTypeId(typeKey TypeKey, id interface{}) TypeId {
+	ret, err := ParseTypeId(typeKey, id)
+	if err != nil {
+		panic(err)
+	}
 	return ret
 }
 

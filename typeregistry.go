@@ -66,10 +66,6 @@ func NewTypeRegistry() *TypeRegistry {
 		files:        protoregistry.GlobalFiles,
 	}
 	r.refresh()
-	log.Println("Types registered:")
-	for _, v := range r.fromFullname {
-		log.Printf("%s: [%v]\n", v.Fullname, v.Aliases)
-	}
 	return r
 }
 
@@ -171,14 +167,14 @@ func (r *TypeRegistry) refresh() error {
 			// shdb.Metadata
 			fd := md.Fields().ByName("metadata")
 			if fd == nil {
-				return true
+				continue
 			}
 			fmd := fd.Message()
 			if fmd == nil {
-				return true
+				continue
 			}
 			if fmd.FullName() != "shdb.v1.Metadata" {
-				return true
+				continue
 			}
 			// Include message if it's not already there
 			if _, ok := r.fromFullname[string(md.FullName())]; !ok {
