@@ -20,79 +20,79 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// ObjectServiceClient is the client API for ObjectService service.
+// BinaryObjectServiceClient is the client API for BinaryObjectService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ObjectServiceClient interface {
+type BinaryObjectServiceClient interface {
 	List(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*ListRsp, error)
-	Get(ctx context.Context, in *GetReq, opts ...grpc.CallOption) (*Object, error)
-	Create(ctx context.Context, in *CreateReq, opts ...grpc.CallOption) (*Object, error)
-	Update(ctx context.Context, in *UpdateReq, opts ...grpc.CallOption) (*Object, error)
-	Delete(ctx context.Context, in *DeleteReq, opts ...grpc.CallOption) (*Object, error)
-	StreamRefs(ctx context.Context, in *StreamRefReq, opts ...grpc.CallOption) (ObjectService_StreamRefsClient, error)
+	Get(ctx context.Context, in *GetReq, opts ...grpc.CallOption) (*BinaryObject, error)
+	Create(ctx context.Context, in *CreateReq, opts ...grpc.CallOption) (*BinaryObject, error)
+	Update(ctx context.Context, in *UpdateReq, opts ...grpc.CallOption) (*BinaryObject, error)
+	Delete(ctx context.Context, in *DeleteReq, opts ...grpc.CallOption) (*BinaryObject, error)
+	StreamRefs(ctx context.Context, in *StreamRefReq, opts ...grpc.CallOption) (BinaryObjectService_StreamRefsClient, error)
 	GetSchema(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*descriptorpb.FileDescriptorSet, error)
 	GetTypeNames(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetTypeNamesRsp, error)
 }
 
-type objectServiceClient struct {
+type binaryObjectServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewObjectServiceClient(cc grpc.ClientConnInterface) ObjectServiceClient {
-	return &objectServiceClient{cc}
+func NewBinaryObjectServiceClient(cc grpc.ClientConnInterface) BinaryObjectServiceClient {
+	return &binaryObjectServiceClient{cc}
 }
 
-func (c *objectServiceClient) List(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*ListRsp, error) {
+func (c *binaryObjectServiceClient) List(ctx context.Context, in *ListReq, opts ...grpc.CallOption) (*ListRsp, error) {
 	out := new(ListRsp)
-	err := c.cc.Invoke(ctx, "/shdb.v1.ObjectService/List", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/shdb.v1.BinaryObjectService/List", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Get(ctx context.Context, in *GetReq, opts ...grpc.CallOption) (*Object, error) {
-	out := new(Object)
-	err := c.cc.Invoke(ctx, "/shdb.v1.ObjectService/Get", in, out, opts...)
+func (c *binaryObjectServiceClient) Get(ctx context.Context, in *GetReq, opts ...grpc.CallOption) (*BinaryObject, error) {
+	out := new(BinaryObject)
+	err := c.cc.Invoke(ctx, "/shdb.v1.BinaryObjectService/Get", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Create(ctx context.Context, in *CreateReq, opts ...grpc.CallOption) (*Object, error) {
-	out := new(Object)
-	err := c.cc.Invoke(ctx, "/shdb.v1.ObjectService/Create", in, out, opts...)
+func (c *binaryObjectServiceClient) Create(ctx context.Context, in *CreateReq, opts ...grpc.CallOption) (*BinaryObject, error) {
+	out := new(BinaryObject)
+	err := c.cc.Invoke(ctx, "/shdb.v1.BinaryObjectService/Create", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Update(ctx context.Context, in *UpdateReq, opts ...grpc.CallOption) (*Object, error) {
-	out := new(Object)
-	err := c.cc.Invoke(ctx, "/shdb.v1.ObjectService/Update", in, out, opts...)
+func (c *binaryObjectServiceClient) Update(ctx context.Context, in *UpdateReq, opts ...grpc.CallOption) (*BinaryObject, error) {
+	out := new(BinaryObject)
+	err := c.cc.Invoke(ctx, "/shdb.v1.BinaryObjectService/Update", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) Delete(ctx context.Context, in *DeleteReq, opts ...grpc.CallOption) (*Object, error) {
-	out := new(Object)
-	err := c.cc.Invoke(ctx, "/shdb.v1.ObjectService/Delete", in, out, opts...)
+func (c *binaryObjectServiceClient) Delete(ctx context.Context, in *DeleteReq, opts ...grpc.CallOption) (*BinaryObject, error) {
+	out := new(BinaryObject)
+	err := c.cc.Invoke(ctx, "/shdb.v1.BinaryObjectService/Delete", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) StreamRefs(ctx context.Context, in *StreamRefReq, opts ...grpc.CallOption) (ObjectService_StreamRefsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &ObjectService_ServiceDesc.Streams[0], "/shdb.v1.ObjectService/StreamRefs", opts...)
+func (c *binaryObjectServiceClient) StreamRefs(ctx context.Context, in *StreamRefReq, opts ...grpc.CallOption) (BinaryObjectService_StreamRefsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &BinaryObjectService_ServiceDesc.Streams[0], "/shdb.v1.BinaryObjectService/StreamRefs", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &objectServiceStreamRefsClient{stream}
+	x := &binaryObjectServiceStreamRefsClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -102,16 +102,16 @@ func (c *objectServiceClient) StreamRefs(ctx context.Context, in *StreamRefReq, 
 	return x, nil
 }
 
-type ObjectService_StreamRefsClient interface {
+type BinaryObjectService_StreamRefsClient interface {
 	Recv() (*ObjRef, error)
 	grpc.ClientStream
 }
 
-type objectServiceStreamRefsClient struct {
+type binaryObjectServiceStreamRefsClient struct {
 	grpc.ClientStream
 }
 
-func (x *objectServiceStreamRefsClient) Recv() (*ObjRef, error) {
+func (x *binaryObjectServiceStreamRefsClient) Recv() (*ObjRef, error) {
 	m := new(ObjRef)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -119,267 +119,267 @@ func (x *objectServiceStreamRefsClient) Recv() (*ObjRef, error) {
 	return m, nil
 }
 
-func (c *objectServiceClient) GetSchema(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*descriptorpb.FileDescriptorSet, error) {
+func (c *binaryObjectServiceClient) GetSchema(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*descriptorpb.FileDescriptorSet, error) {
 	out := new(descriptorpb.FileDescriptorSet)
-	err := c.cc.Invoke(ctx, "/shdb.v1.ObjectService/GetSchema", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/shdb.v1.BinaryObjectService/GetSchema", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *objectServiceClient) GetTypeNames(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetTypeNamesRsp, error) {
+func (c *binaryObjectServiceClient) GetTypeNames(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetTypeNamesRsp, error) {
 	out := new(GetTypeNamesRsp)
-	err := c.cc.Invoke(ctx, "/shdb.v1.ObjectService/GetTypeNames", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/shdb.v1.BinaryObjectService/GetTypeNames", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ObjectServiceServer is the server API for ObjectService service.
-// All implementations must embed UnimplementedObjectServiceServer
+// BinaryObjectServiceServer is the server API for BinaryObjectService service.
+// All implementations must embed UnimplementedBinaryObjectServiceServer
 // for forward compatibility
-type ObjectServiceServer interface {
+type BinaryObjectServiceServer interface {
 	List(context.Context, *ListReq) (*ListRsp, error)
-	Get(context.Context, *GetReq) (*Object, error)
-	Create(context.Context, *CreateReq) (*Object, error)
-	Update(context.Context, *UpdateReq) (*Object, error)
-	Delete(context.Context, *DeleteReq) (*Object, error)
-	StreamRefs(*StreamRefReq, ObjectService_StreamRefsServer) error
+	Get(context.Context, *GetReq) (*BinaryObject, error)
+	Create(context.Context, *CreateReq) (*BinaryObject, error)
+	Update(context.Context, *UpdateReq) (*BinaryObject, error)
+	Delete(context.Context, *DeleteReq) (*BinaryObject, error)
+	StreamRefs(*StreamRefReq, BinaryObjectService_StreamRefsServer) error
 	GetSchema(context.Context, *emptypb.Empty) (*descriptorpb.FileDescriptorSet, error)
 	GetTypeNames(context.Context, *emptypb.Empty) (*GetTypeNamesRsp, error)
-	mustEmbedUnimplementedObjectServiceServer()
+	mustEmbedUnimplementedBinaryObjectServiceServer()
 }
 
-// UnimplementedObjectServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedObjectServiceServer struct {
+// UnimplementedBinaryObjectServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedBinaryObjectServiceServer struct {
 }
 
-func (UnimplementedObjectServiceServer) List(context.Context, *ListReq) (*ListRsp, error) {
+func (UnimplementedBinaryObjectServiceServer) List(context.Context, *ListReq) (*ListRsp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedObjectServiceServer) Get(context.Context, *GetReq) (*Object, error) {
+func (UnimplementedBinaryObjectServiceServer) Get(context.Context, *GetReq) (*BinaryObject, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedObjectServiceServer) Create(context.Context, *CreateReq) (*Object, error) {
+func (UnimplementedBinaryObjectServiceServer) Create(context.Context, *CreateReq) (*BinaryObject, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
-func (UnimplementedObjectServiceServer) Update(context.Context, *UpdateReq) (*Object, error) {
+func (UnimplementedBinaryObjectServiceServer) Update(context.Context, *UpdateReq) (*BinaryObject, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
-func (UnimplementedObjectServiceServer) Delete(context.Context, *DeleteReq) (*Object, error) {
+func (UnimplementedBinaryObjectServiceServer) Delete(context.Context, *DeleteReq) (*BinaryObject, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedObjectServiceServer) StreamRefs(*StreamRefReq, ObjectService_StreamRefsServer) error {
+func (UnimplementedBinaryObjectServiceServer) StreamRefs(*StreamRefReq, BinaryObjectService_StreamRefsServer) error {
 	return status.Errorf(codes.Unimplemented, "method StreamRefs not implemented")
 }
-func (UnimplementedObjectServiceServer) GetSchema(context.Context, *emptypb.Empty) (*descriptorpb.FileDescriptorSet, error) {
+func (UnimplementedBinaryObjectServiceServer) GetSchema(context.Context, *emptypb.Empty) (*descriptorpb.FileDescriptorSet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSchema not implemented")
 }
-func (UnimplementedObjectServiceServer) GetTypeNames(context.Context, *emptypb.Empty) (*GetTypeNamesRsp, error) {
+func (UnimplementedBinaryObjectServiceServer) GetTypeNames(context.Context, *emptypb.Empty) (*GetTypeNamesRsp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTypeNames not implemented")
 }
-func (UnimplementedObjectServiceServer) mustEmbedUnimplementedObjectServiceServer() {}
+func (UnimplementedBinaryObjectServiceServer) mustEmbedUnimplementedBinaryObjectServiceServer() {}
 
-// UnsafeObjectServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ObjectServiceServer will
+// UnsafeBinaryObjectServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to BinaryObjectServiceServer will
 // result in compilation errors.
-type UnsafeObjectServiceServer interface {
-	mustEmbedUnimplementedObjectServiceServer()
+type UnsafeBinaryObjectServiceServer interface {
+	mustEmbedUnimplementedBinaryObjectServiceServer()
 }
 
-func RegisterObjectServiceServer(s grpc.ServiceRegistrar, srv ObjectServiceServer) {
-	s.RegisterService(&ObjectService_ServiceDesc, srv)
+func RegisterBinaryObjectServiceServer(s grpc.ServiceRegistrar, srv BinaryObjectServiceServer) {
+	s.RegisterService(&BinaryObjectService_ServiceDesc, srv)
 }
 
-func _ObjectService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _BinaryObjectService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).List(ctx, in)
+		return srv.(BinaryObjectServiceServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/shdb.v1.ObjectService/List",
+		FullMethod: "/shdb.v1.BinaryObjectService/List",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).List(ctx, req.(*ListReq))
+		return srv.(BinaryObjectServiceServer).List(ctx, req.(*ListReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _BinaryObjectService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Get(ctx, in)
+		return srv.(BinaryObjectServiceServer).Get(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/shdb.v1.ObjectService/Get",
+		FullMethod: "/shdb.v1.BinaryObjectService/Get",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Get(ctx, req.(*GetReq))
+		return srv.(BinaryObjectServiceServer).Get(ctx, req.(*GetReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _BinaryObjectService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Create(ctx, in)
+		return srv.(BinaryObjectServiceServer).Create(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/shdb.v1.ObjectService/Create",
+		FullMethod: "/shdb.v1.BinaryObjectService/Create",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Create(ctx, req.(*CreateReq))
+		return srv.(BinaryObjectServiceServer).Create(ctx, req.(*CreateReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _BinaryObjectService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Update(ctx, in)
+		return srv.(BinaryObjectServiceServer).Update(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/shdb.v1.ObjectService/Update",
+		FullMethod: "/shdb.v1.BinaryObjectService/Update",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Update(ctx, req.(*UpdateReq))
+		return srv.(BinaryObjectServiceServer).Update(ctx, req.(*UpdateReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _BinaryObjectService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).Delete(ctx, in)
+		return srv.(BinaryObjectServiceServer).Delete(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/shdb.v1.ObjectService/Delete",
+		FullMethod: "/shdb.v1.BinaryObjectService/Delete",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).Delete(ctx, req.(*DeleteReq))
+		return srv.(BinaryObjectServiceServer).Delete(ctx, req.(*DeleteReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_StreamRefs_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _BinaryObjectService_StreamRefs_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(StreamRefReq)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(ObjectServiceServer).StreamRefs(m, &objectServiceStreamRefsServer{stream})
+	return srv.(BinaryObjectServiceServer).StreamRefs(m, &binaryObjectServiceStreamRefsServer{stream})
 }
 
-type ObjectService_StreamRefsServer interface {
+type BinaryObjectService_StreamRefsServer interface {
 	Send(*ObjRef) error
 	grpc.ServerStream
 }
 
-type objectServiceStreamRefsServer struct {
+type binaryObjectServiceStreamRefsServer struct {
 	grpc.ServerStream
 }
 
-func (x *objectServiceStreamRefsServer) Send(m *ObjRef) error {
+func (x *binaryObjectServiceStreamRefsServer) Send(m *ObjRef) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _ObjectService_GetSchema_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _BinaryObjectService_GetSchema_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).GetSchema(ctx, in)
+		return srv.(BinaryObjectServiceServer).GetSchema(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/shdb.v1.ObjectService/GetSchema",
+		FullMethod: "/shdb.v1.BinaryObjectService/GetSchema",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).GetSchema(ctx, req.(*emptypb.Empty))
+		return srv.(BinaryObjectServiceServer).GetSchema(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ObjectService_GetTypeNames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _BinaryObjectService_GetTypeNames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ObjectServiceServer).GetTypeNames(ctx, in)
+		return srv.(BinaryObjectServiceServer).GetTypeNames(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/shdb.v1.ObjectService/GetTypeNames",
+		FullMethod: "/shdb.v1.BinaryObjectService/GetTypeNames",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ObjectServiceServer).GetTypeNames(ctx, req.(*emptypb.Empty))
+		return srv.(BinaryObjectServiceServer).GetTypeNames(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// ObjectService_ServiceDesc is the grpc.ServiceDesc for ObjectService service.
+// BinaryObjectService_ServiceDesc is the grpc.ServiceDesc for BinaryObjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var ObjectService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "shdb.v1.ObjectService",
-	HandlerType: (*ObjectServiceServer)(nil),
+var BinaryObjectService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "shdb.v1.BinaryObjectService",
+	HandlerType: (*BinaryObjectServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "List",
-			Handler:    _ObjectService_List_Handler,
+			Handler:    _BinaryObjectService_List_Handler,
 		},
 		{
 			MethodName: "Get",
-			Handler:    _ObjectService_Get_Handler,
+			Handler:    _BinaryObjectService_Get_Handler,
 		},
 		{
 			MethodName: "Create",
-			Handler:    _ObjectService_Create_Handler,
+			Handler:    _BinaryObjectService_Create_Handler,
 		},
 		{
 			MethodName: "Update",
-			Handler:    _ObjectService_Update_Handler,
+			Handler:    _BinaryObjectService_Update_Handler,
 		},
 		{
 			MethodName: "Delete",
-			Handler:    _ObjectService_Delete_Handler,
+			Handler:    _BinaryObjectService_Delete_Handler,
 		},
 		{
 			MethodName: "GetSchema",
-			Handler:    _ObjectService_GetSchema_Handler,
+			Handler:    _BinaryObjectService_GetSchema_Handler,
 		},
 		{
 			MethodName: "GetTypeNames",
-			Handler:    _ObjectService_GetTypeNames_Handler,
+			Handler:    _BinaryObjectService_GetTypeNames_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "StreamRefs",
-			Handler:       _ObjectService_StreamRefs_Handler,
+			Handler:       _BinaryObjectService_StreamRefs_Handler,
 			ServerStreams: true,
 		},
 	},

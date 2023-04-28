@@ -53,12 +53,12 @@ message SearchHit {
 
 message SearchResult { repeated SearchHit hits = 1; }
 
-service ObjectService {
+service BinaryObjectService {
   rpc List(ListReq) returns (ListRsp);
-  rpc Get(GetReq) returns (Object);
-  rpc Create(CreateReq) returns (Object);
-  rpc Update(UpdateReq) returns (Object);
-  rpc Delete(DeleteReq) returns (Object);
+  rpc Get(GetReq) returns (BinaryObject);
+  rpc Create(CreateReq) returns (BinaryObject);
+  rpc Update(UpdateReq) returns (BinaryObject);
+  rpc Delete(DeleteReq) returns (BinaryObject);
 
   rpc StreamRefs(StreamRefReq) returns (stream ObjRef);
 
@@ -67,7 +67,7 @@ service ObjectService {
   rpc GetTypeNames(google.protobuf.Empty) returns (GetTypeNamesRsp);
 }
 
-message Object {
+message BinaryObject {
   bytes key = 1;
   bytes value = 2;
 }
@@ -79,7 +79,7 @@ message ListReq {
 }
 
 message ListRsp {
-  repeated Object objects = 1;
+  repeated BinaryObject items = 1;
   string next_page_token = 2;
 }
 
@@ -87,7 +87,7 @@ message GetReq { ObjRef ref = 1; }
 
 message CreateReq { bytes type = 1; }
 
-message UpdateReq { Object object = 1; }
+message UpdateReq { BinaryObject item = 1; }
 
 message DeleteReq { ObjRef ref = 1; }
 

@@ -27,7 +27,7 @@ import (
 )
 
 type Server struct {
-	UnimplementedObjectServiceServer
+	UnimplementedBinaryObjectServiceServer
 	ctx     context.Context
 	gs      *grpc.Server
 	typeReg *TypeRegistry
@@ -39,7 +39,7 @@ func NewServer(ctx context.Context, grpcServer *grpc.Server, typeReg *TypeRegist
 		gs:      grpcServer,
 		typeReg: typeReg,
 	}
-	RegisterObjectServiceServer(grpcServer, s)
+	RegisterBinaryObjectServiceServer(grpcServer, s)
 	return s
 }
 
@@ -53,23 +53,23 @@ func (s *Server) List(ctx context.Context, req *ListReq) (*ListRsp, error) {
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed listing objects")
 	}
-	rsp := &ListRsp{Objects: make([]*Object, 0), NextPageToken: nextPageToken}
+	rsp := &ListRsp{Items: make([]*BinaryObject, 0), NextPageToken: nextPageToken}
 	for _, v := range kv {
-		rsp.Objects = append(rsp.Objects, &Object{Key: v.Key(), Value: v.Value})
+		rsp.Items = append(rsp.Items, &BinaryObject{Key: v.Key(), Value: v.Value})
 	}
 	return rsp, nil
 }
 
-func (s *Server) Get(ctx context.Context, req *GetReq) (*Object, error) {
+func (s *Server) Get(ctx context.Context, req *GetReq) (*BinaryObject, error) {
 	kv, err := get(*req.Ref.TypeId())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed retrieve an object")
 	}
-	return &Object{Key: kv.Key(), Value: kv.Value}, nil
+	return &BinaryObject{Key: kv.Key(), Value: kv.Value}, nil
 
 }
 
-func (s *Server) Create(ctx context.Context, req *CreateReq) (*Object, error) {
+func (s *Server) Create(ctx context.Context, req *CreateReq) (*BinaryObject, error) {
 	o, err := New[IObject]([4]byte(req.Type))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create object %v", err)
@@ -78,11 +78,11 @@ func (s *Server) Create(ctx context.Context, req *CreateReq) (*Object, error) {
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create object %v", err)
 	}
-	return &Object{Key: kv[0].Key(), Value: kv[0].Value}, nil
+	return &BinaryObject{Key: kv[0].Key(), Value: kv[0].Value}, nil
 }
 
-func (s *Server) Update(ctx context.Context, req *UpdateReq) (*Object, error) {
-	kv, err := get(*MarshalTypeId(req.Object.Key))
+func (s *Server) Update(ctx context.Context, req *UpdateReq) (*BinaryObject, error) {
+	kv, err := get(*MarshalTypeId(req.Item.Key))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update object %v", err)
 	}
@@ -100,10 +100,10 @@ func (s *Server) Update(ctx context.Context, req *UpdateReq) (*Object, error) {
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update object %v", err)
 	}
-	return &Object{Key: kvs[0].Key(), Value: kvs[0].Value}, nil
+	return &BinaryObject{Key: kvs[0].Key(), Value: kvs[0].Value}, nil
 
 }
-func (s *Server) Delete(ctx context.Context, req *DeleteReq) (*Object, error) {
+func (s *Server) Delete(ctx context.Context, req *DeleteReq) (*BinaryObject, error) {
 	obj, err := Delete[IObject](*req.Ref.TypeId())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete object %v", err)
@@ -112,7 +112,7 @@ func (s *Server) Delete(ctx context.Context, req *DeleteReq) (*Object, error) {
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete object %v", err)
 	}
-	return &Object{Key: kvs[0].Key(), Value: kvs[0].Value}, nil
+	return &BinaryObject{Key: kvs[0].Key(), Value: kvs[0].Value}, nil
 }
 
 func (s *Server) GetSchema(ctx context.Context, req *emptypb.Empty) (*descriptorpb.FileDescriptorSet, error) {
@@ -131,7 +131,7 @@ func (s *Server) GetTypeNames(ctx context.Context, req *emptypb.Empty) (*GetType
 	return rsp, nil
 }
 
-func (s *Server) StreamRefs(req *StreamRefReq, stream ObjectService_StreamRefsServer) error {
+func (s *Server) StreamRefs(req *StreamRefReq, stream BinaryObjectService_StreamRefsServer) error {
 	selector := func(obj *ObjRef) bool {
 		if bytes.Equal(req.TypeKey, TypeKeyAll[:]) {
 			return true

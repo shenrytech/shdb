@@ -24,14 +24,14 @@ import (
 
 type Client struct {
 	cc      *grpc.ClientConn
-	cli     ObjectServiceClient
+	cli     BinaryObjectServiceClient
 	ctx     context.Context
 	typeReg *TypeRegistry
 }
 
 // NewClient returns a new client for use with the API
 func NewClient(ctx context.Context, cc *grpc.ClientConn) *Client {
-	return &Client{ctx: ctx, cc: cc, cli: NewObjectServiceClient(cc), typeReg: nil}
+	return &Client{ctx: ctx, cc: cc, cli: NewBinaryObjectServiceClient(cc), typeReg: nil}
 }
 
 func (c *Client) Get(tid TypeId) (IObject, error) {
@@ -58,7 +58,7 @@ func (c *Client) List(tk TypeKey) ([]IObject, error) {
 		return nil, err
 	}
 	res := []IObject{}
-	for _, v := range rsp.Objects {
+	for _, v := range rsp.Items {
 		obj, err := c.TypeRegistry().Unmarshal(v.Key, v.Value)
 		if err != nil {
 			return nil, err
@@ -93,8 +93,8 @@ func (c *Client) Update(obj IObject) (IObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	o := &Object{Key: kvs[0].Key(), Value: kvs[0].Value}
-	rsp, err := c.cli.Update(c.ctx, &UpdateReq{Object: o})
+	o := &BinaryObject{Key: kvs[0].Key(), Value: kvs[0].Value}
+	rsp, err := c.cli.Update(c.ctx, &UpdateReq{Item: o})
 	if err != nil {
 		return nil, err
 	}
